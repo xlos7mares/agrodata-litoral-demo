@@ -4,9 +4,10 @@ import numpy as np
 import plotly.graph_objects as go
 import pydeck as pdk
 
-# Configuración de Interfaz de Alta Gama
+# Configuración de Ingeniería de Alta Gama
 st.set_page_config(page_title="AgroData Litoral - Master Report", layout="wide")
 
+# Estilo para cuadros Nítidos y Profesionales
 st.markdown("""
     <style>
     .main { background-color: #ffffff; }
@@ -14,6 +15,7 @@ st.markdown("""
         background-color: #ffffff;
         border: 2px solid #28a745;
         border-radius: 12px;
+        padding: 20px;
         box-shadow: 0px 4px 10px rgba(0,0,0,0.05);
     }
     </style>
@@ -22,66 +24,73 @@ st.markdown("""
 st.title("🛰️ AgroData Litoral: Auditoría Agro-Geológica Integral")
 st.subheader("Establecimiento: Lafluf | Young, Río Negro")
 
-# --- MÉTRICAS CON TOOLTIPS ---
+# --- SECCIÓN 1: MÉTRICAS TÉCNICAS (CON MENSAJES FLOTANTES) ---
 col1, col2, col3 = st.columns(3)
+
 with col1:
-    st.metric("Salud Vegetal (NDVI)", "0.78", "+0.05", help="Fuente: Sentinel-2. Detecta vigor fotosintético.")
+    st.metric(
+        label="Salud Vegetal (NDVI)", value="0.78", delta="+0.05",
+        help="Satelite Sentinel-2. El 0.78 indica fotosíntesis activa. El inversor ve un activo biológico en crecimiento."
+    )
 with col2:
-    st.metric("Humedad Profunda (1m)", "14.2%", "-3.8%", delta_color="inverse", help="Fuente: NASA SMAP. Escaneo de reserva hídrica subterránea.")
+    st.metric(
+        label="Humedad Profunda (1m)", value="14.2%", delta="-3.8% CRÍTICO", delta_color="inverse",
+        help="Satelite NASA SMAP. Mide agua útil para la raíz. Indica que el subsuelo está entrando en zona de déficit."
+    )
 with col3:
-    st.metric("Resistencia Suelo", "2.5 MPa", "Suelo Fuerte", help="Fuente: Análisis Geológico. Apto para cimentación pesada.")
+    st.metric(
+        label="Resistencia Suelo", value="2.5 MPa", delta="Suelo Fuerte",
+        help="Análisis Geológico. Apto para cimentación pesada de galpones o infraestructura sin riesgo de hundimiento."
+    )
 
 st.write("---")
 
-# --- MAPA SATELITAL DE ALTA DEFINICIÓN ---
+# --- SECCIÓN 2: EL MAPA SATELITAL REAL ---
 st.subheader("🌐 Escaneo Satelital de Precisión (Capa de Subsuelo)")
 
-# Definimos el área exacta (5 Ha en Young) con coordenadas reales
-# El polígono tiene un color verde neón flúor para resaltar sobre el satélite
+# Definimos el área exacta de Lafluf (5 Ha) con color Verde Neón Flúor
 polygon_data = [{
     "polygon": [
         [-57.635, -32.685], [-57.625, -32.685], 
         [-57.625, -32.695], [-57.635, -32.695], 
         [-57.635, -32.685]
     ],
-    "label": "Lote Lafluf - Análisis Activo"
+    "label": "Lote Lafluf - Análisis de Capas"
 }]
 
 layer = pdk.Layer(
     "PolygonLayer",
     polygon_data,
     get_polygon="polygon",
-    get_fill_color=[57, 255, 20, 100],  # Verde Neón traslúcido
-    get_line_color=[255, 255, 255],     # Borde blanco puro
+    get_fill_color=[57, 255, 20, 120],  # VERDE NEÓN TRASLÚCIDO
+    get_line_color=[255, 255, 255],     # BORDE BLANCO FUERTE
     get_line_width=5,
-    line_width_min_pixels=2,
     pickable=True,
 )
 
-# Vista de cámara profesional (Inclinada y Zoom cercano)
+# Vista centrada y con inclinación 3D
 view_state = pdk.ViewState(
-    latitude=-32.69, 
-    longitude=-57.63, 
-    zoom=14.8, 
-    pitch=50,   # Efecto 3D
-    bearing=-10 # Rotación de cámara
+    latitude=-32.69, longitude=-57.63, 
+    zoom=14.5, pitch=50, bearing=-10
 )
 
-# Renderizado con estilo 'Satellite-Streets' (Mapa Real de Google Maps/Mapbox)
+# CARGA DE MAPA SATELITAL (Estilo híbrido para máxima realidad)
 st.pydeck_chart(pdk.Deck(
     layers=[layer],
     initial_view_state=view_state,
-    map_style="mapbox://styles/mapbox/satellite-streets-v12", # ESTO ES LO QUE BUSCAS
+    map_style="mapbox://styles/mapbox/satellite-v9", # Versión satelital directa
     tooltip={"text": "{label}"}
 ))
 
-# --- GRÁFICA Y CONCLUSIÓN ---
+# --- SECCIÓN 3: GRÁFICA Y CONCLUSIÓN ---
 st.write("---")
-st.header("📈 Proyección Hídrica de Rendimiento")
+st.header("📈 Proyección Hídrica y Financiera")
+dias = list(range(1, 11))
+humedad = [18, 16, 15, 14, 13, 12, 11, 10, 9, 8]
 fig = go.Figure()
-fig.add_trace(go.Scatter(x=list(range(10)), y=[18,16,15,14,13,12,11,10,9,8], name="Humedad %", line=dict(color="#28a745", width=4)))
+fig.add_trace(go.Scatter(x=dias, y=humedad, name="Reserva Hídrica", line=dict(color="#28a745", width=4)))
 fig.add_hline(y=12, line_dash="dash", line_color="red", annotation_text="PUNTO DE MARCHITEZ")
-fig.update_layout(template="plotly_white", xaxis_title="Días de Proyección", yaxis_title="Humedad %")
+fig.update_layout(template="plotly_white", xaxis_title="Días Proyectados", yaxis_title="% Humedad")
 st.plotly_chart(fig, use_container_width=True)
 
-st.info("💡 **Conclusión para Inversores:** El predio presenta un subsuelo estable y un vigor biológico (NDVI) superior al promedio zonal. La inversión en riego suplementario es necesaria para proteger el activo biológico actual.")
+st.info("💡 **Conclusión Estratégica:** El predio presenta un subsuelo estable (Geología tipo 'Fuerte') y un vigor biológico (NDVI) competitivo. Se recomienda activar riego para proteger los u$s 4,200 en riesgo por estrés hídrico.")
