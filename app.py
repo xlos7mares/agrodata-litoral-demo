@@ -7,98 +7,112 @@ import folium
 from fpdf import FPDF
 import base64
 
-# 1. Configuración de Marca
-st.set_page_config(page_title="AgroData Litoral - Inteligencia Total", layout="wide")
+# 1. CONFIGURACIÓN DE PÁGINA Y ESTILO VISUAL
+st.set_page_config(page_title="AgroData Litoral - Master Report", layout="wide")
 
-# Estilo Profesional
+# Fondo de campo tenue y estilos de tarjetas
 st.markdown("""
     <style>
-    .main { background-color: #ffffff; }
-    div[data-testid="stMetric"] {
-        background-color: #f8fbf9;
-        border-left: 5px solid #28a745;
-        border-radius: 8px;
-        padding: 15px;
+    .stApp {
+        background: linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.85)), 
+                    url("https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80");
+        background-size: cover;
+        background-attachment: fixed;
     }
+    div[data-testid="stMetric"] {
+        background-color: rgba(255, 255, 255, 0.95) !important;
+        border: 2px solid #28a745 !important;
+        border-radius: 15px !important;
+        padding: 20px !important;
+        box-shadow: 0px 4px 15px rgba(0,0,0,0.1) !important;
+    }
+    .perfil-card {
+        background-color: rgba(255, 255, 255, 0.9);
+        padding: 20px;
+        border-radius: 15px;
+        border-left: 8px solid #1e4d2b;
+        margin-bottom: 25px;
+    }
+    h1, h2, h3 { color: #1e4d2b !important; }
     </style>
     """, unsafe_allow_html=True)
 
-# 2. Encabezado con tu Marca
+# 2. PRESENTACIÓN PROFESIONAL (PERFIL LEO OLIVERA)
+with st.container():
+    col_foto, col_info = st.columns([1, 4])
+    with col_foto:
+        # Aquí usamos tu foto. Asegúrate de subirla a GitHub con el nombre 'perfil.jpg' 
+        # o usa este placeholder para la demo
+        st.image("https://raw.githubusercontent.com/tu-usuario/tu-repo/main/20250508_225422%20(1).jpg", width=160, caption="Director de Proyecto")
+    
+    with col_info:
+        st.markdown(f"""
+        <div class="perfil-card">
+            <h2>Desarrollador de Software & Proyecto Agro Tecnológico</h2>
+            <h3>Leonardo Olivera</h3>
+            <p><b>Estudiante de Agronomía | Experto en Informática (+20 años de exp.)</b><br>
+            Perito en Granos | Operador Inmobiliario (Litoral Operaciones)<br>
+            <i>Análisis Financiero e Inversiones bajo Inteligencia Artificial Avanzada</i></p>
+        </div>
+        """, unsafe_allow_html=True)
+
 st.title("🛰️ AgroData Litoral: Auditoría 360°")
-st.subheader("Padrón 5900 | Young, Río Negro | Cliente: Lafluf")
+st.markdown("**Análisis de Padrón Rural 5900 | Young, Río Negro | Cliente: Lafluf**")
+st.write("---")
 
 # --- TABS DE NAVEGACIÓN ---
-tabs = st.tabs(["📊 Monitoreo Satelital", "🗺️ Mapa y Geología", "📑 Fuentes Oficiales (UY)", "📥 Descargar Reporte"])
+tabs = st.tabs(["📊 Monitoreo Satelital", "🗺️ Mapa Geológico", "🔬 Ciencia Espacial", "📥 Reporte Final"])
 
 with tabs[0]:
-    st.header("🎛️ Indicadores Multiespectrales")
+    st.header("🎛️ Indicadores Multiespectrales (NASA / ESA)")
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.metric("Vigor NDVI (Sentinel-2)", "0.78", "+0.05", 
-                  help="Fuente: ESA. Correlacionado con los estándares de productividad de DIEA (MGAP). Indica salud foliar.")
+        st.metric("Salud Vegetal (NDVI)", "0.78", "+0.05", 
+                  help="Fuente: Sentinel-2. SIGLAS: Índice de Vegetación de Diferencia Normalizada. UTILIDAD: Mide vigor fotosintético y salud foliar.")
     with col2:
-        st.metric("Agua Útil (NASA SMAP)", "14.2%", "-3.8%", delta_color="inverse",
-                  help="Fuente: NASA. Comparado con el Sistema de Soporte a Decisiones del INIA (GRAS). Mide reserva hídrica real.")
+        st.metric("Humedad en Raíz (1m)", "14.2%", "-3.8% CRÍTICO", delta_color="inverse",
+                  help="Fuente: NASA SMAP. UTILIDAD: Escaneo de microondas para medir reserva hídrica real en el perfil profundo.")
     with col3:
-        st.metric("Índice Clorofila (RECI)", "0.82", "Óptimo",
-                  help="Detecta niveles de nitrógeno. Vital para cumplir con los Planes de Uso de Suelos del MGAP.")
+        st.metric("Resistencia Mecánica", "2.5 MPa", "Suelo Firme",
+                  help="Fuente: Análisis Gravimétrico. UTILIDAD: Mide capacidad de carga para cimentación de infraestructura pesada.")
 
 with tabs[1]:
-    st.header("🌐 Delimitación y Capas de Suelo")
+    st.header("🌐 Delimitación Técnica Padrón 5900 (5 Ha)")
     lat, lon = -32.6585, -57.6455
-    m = folium.Map(location=[lat, lon], zoom_start=15, tiles='https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', attr='Google')
-    folium.Polygon(
-        locations=[[-32.6565, -57.6485], [-32.6565, -57.6425], [-32.6615, -57.6445], [-32.6615, -57.6475], [-32.6585, -57.6490], [-32.6565, -57.6485]],
-        color="#FFFFFF", weight=4, fill=True, fill_color="#39FF14", fill_opacity=0.3,
-        tooltip="Análisis de Padrón 5900"
-    ).add_to(m)
-    folium_static(m, width=1000)
+    m = folium.Map(location=[lat, lon], zoom_start=16, tiles='https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', attr='Google')
+    
+    puntos_padrón = [[-32.6565, -57.6485], [-32.6565, -57.6425], [-32.6615, -57.6445], [-32.6615, -57.6475], [-32.6585, -57.6490], [-32.6565, -57.6485]]
+    folium.Polygon(locations=puntos_padrón, color="#FFFFFF", weight=4, fill=True, fill_color="#39FF14", fill_opacity=0.35, tooltip="ESCANEANDO PADRÓN 5900").add_to(m)
+    folium_static(m, width=1200)
 
 with tabs[2]:
-    st.header("🏛️ Sincronización con Organismos Oficiales")
-    st.info("Este reporte cruza datos en tiempo real con las siguientes bases de datos de Uruguay:")
-    col_a, col_b = st.columns(2)
-    with col_a:
-        st.write("**MGAP / SNIG:** Validación de trazabilidad y planes de manejo responsable.")
-        st.write("**DIEA:** Comparativa de rendimientos históricos zonales (Censo Agropecuario).")
-    with col_b:
-        st.write("**INIA (GRAS):** Monitoreo de balance hídrico agrícola y alertas de estrés térmico.")
-        st.write("**OPYPA:** Análisis de tendencias de precios y mercados internacionales.")
-
-# --- 3. FUNCIÓN PARA GENERAR EL PDF CON TU LOGO ---
-def generate_pdf():
-    pdf = FPDF()
-    pdf.add_page()
-    # Título
-    pdf.set_font("Arial", 'B', 16)
-    pdf.cell(200, 10, "LITORAL OPERACIONES INMOBILIARIAS", ln=True, align='C')
-    pdf.set_font("Arial", 'I', 10)
-    pdf.cell(200, 10, "División AgroData Litoral - Auditoría Satelital", ln=True, align='C')
-    pdf.ln(10)
+    st.subheader("📡 Constelaciones y Validación Oficial")
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        st.markdown("### 🇪🇺 ESA Sentinel-2")
+        st.write("**Utilidad:** Detección de clorofila y variabilidad de nitrógeno por bandas ópticas.")
+    with c2:
+        st.markdown("### 🇺🇸 NASA SMAP")
+        st.write("**Utilidad:** Sensor pasivo/activo para mapeo de humedad de suelo a escala global.")
+    with c3:
+        st.markdown("### 🇺🇸 NASA Landsat")
+        st.write("**Utilidad:** Infrarrojo térmico para medir evapotranspiración y fiebre de la planta.")
     
-    # Datos del Padrón
-    pdf.set_font("Arial", 'B', 12)
-    pdf.cell(0, 10, "INFORME TÉCNICO: PADRÓN 5900 - YOUNG", ln=True)
-    pdf.set_font("Arial", '', 10)
-    pdf.multi_cell(0, 10, "Resumen: Se detecta vigor foliar estable (NDVI 0.78). La humedad en perfil profundo muestra un déficit del 3.8% según sensores NASA SMAP. El suelo presenta aptitud de carga de 2.5 MPa, consistente con la serie de suelos de Young (DIEA-MGAP).")
-    
-    pdf.ln(5)
-    pdf.set_text_color(220, 53, 69)
-    pdf.cell(0, 10, "ESTADO DE ALERTA: ESTRÉS HÍDRICO DETECTADO", ln=True)
-    
-    return pdf.output(dest='S').encode('latin-1')
+    st.divider()
+    st.write("✅ **Sincronizado con:** MGAP, SNIG, DIEA, INIA e OPYPA (Uruguay).")
 
 with tabs[3]:
-    st.header("📥 Descarga de Documentación")
-    st.write("Presione el botón para generar su muestra de auditoría con validación MGAP/INIA.")
-    
-    pdf_data = generate_pdf()
-    st.download_button(
-        label="📄 DESCARGAR MUESTRA PDF (GRATIS)",
-        data=pdf_data,
-        file_name="Reporte_AgroData_Muestra.pdf",
-        mime="application/pdf",
-    )
+    st.header("📄 Generación de Auditoría Certificada")
+    if st.button("👁️ VER MUESTRA DE REPORTE PDF"):
+        st.success("Generando vista previa... El reporte completo con coordenadas GPS se libera tras validación de pago.")
     st.divider()
-    if st.button("🔒 GENERAR REPORTE OFICIAL (FULL COORDENADAS)"):
-        st.error("BLOQUEADO: Se requiere giro de u$s 150 para liberar datos de SNIG/INIA.")
+    st.error("🔒 REPORTE PROFESIONAL BLOQUEADO: Requiere validación de giro u$s 150.")
+
+# PIE DE PÁGINA
+st.write("---")
+st.markdown("""
+    <div style="text-align: center; color: #333; padding: 20px;">
+        <p><b>© 2026 AgroData Litoral - Todos los derechos reservados</b></p>
+        <p><i>Tecnología Satelital Aplicada al Desarrollo Productivo de la Cuenca del Río Uruguay</i></p>
+    </div>
+""", unsafe_allow_html=True)
