@@ -5,9 +5,10 @@ from streamlit_folium import folium_static
 import folium
 import os
 
-# 1. CONFIGURACIÓN Y ESTÉTICA "TECH-AGRO"
-st.set_page_config(page_title="AgroData Litoral - Auditoría Premium", layout="wide")
+# 1. CONFIGURACIÓN DE PÁGINA
+st.set_page_config(page_title="AgroData Litoral - Premium", layout="wide")
 
+# 2. ESTILOS CSS (DISEÑO Y LECTURA)
 st.markdown("""
     <style>
     .stApp {
@@ -15,72 +16,71 @@ st.markdown("""
                     url("https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80");
         background-size: cover; background-attachment: fixed;
     }
-    
     div[data-testid="stMetric"] {
         background-color: rgba(255, 255, 255, 0.15) !important;
         border-radius: 15px !important;
-        padding: 25px !important;
+        padding: 20px !important;
         border: 1px solid rgba(255,255,255,0.3) !important;
         backdrop-filter: blur(10px);
-        box-shadow: 0px 10px 30px rgba(0,0,0,0.5) !important;
     }
-    
-    div[data-testid="stMetricValue"] { color: #FFFFFF !important; font-weight: 900 !important; font-size: 2.5rem !important; }
-    div[data-testid="stMetricLabel"] { color: #39FF14 !important; font-size: 1.1rem !important; }
+    div[data-testid="stMetricValue"] { color: #FFFFFF !important; font-weight: 900 !important; }
+    div[data-testid="stMetricLabel"] { color: #39FF14 !important; }
 
-    .stTabs [data-baseweb="tab-list"] { gap: 20px; background-color: rgba(0,0,0,0.6); padding: 10px; border-radius: 12px; }
-    .stTabs [data-baseweb="tab"] { height: 60px; font-size: 20px !important; color: white !important; }
-
-    /* Caja de Inversión y Datos Científicos */
     .cientifico-box {
-        background-color: rgba(255, 255, 255, 0.95);
+        background-color: rgba(255, 255, 255, 0.98);
         color: #000;
         padding: 40px;
         border-radius: 20px;
         border-left: 15px solid #1e4d2b;
         margin-top: 30px;
-        line-height: 1.6;
     }
-    .fuente-box {
-        background-color: #f9f9f9;
-        padding: 15px;
+    .fuente-item {
+        background-color: #f0f4f0;
+        padding: 20px;
         border-radius: 10px;
-        border-left: 5px solid #39FF14;
         margin-bottom: 15px;
+        border-left: 5px solid #39FF14;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# 2. ENCABEZADO
+# 3. PANEL DE ADMINISTRADOR (BARRA LATERAL)
+with st.sidebar:
+    st.header("🔑 Panel de Control")
+    st.write("Solo para Leonardo Olivera")
+    coord_admin = st.text_area("Ingresar Coordenadas del Padrón:", height=150, placeholder="Ej: -32.65, -57.64")
+    if st.button("Ejecutar Escaneo Satelital"):
+        st.success("Señal vinculada con éxito.")
+
+# 4. ENCABEZADO
 with st.container():
     col_l, col_r = st.columns([2.5, 3])
     with col_l:
-        st.markdown("<div style='display: flex; align-items: center;'><span style='font-size: 90px; margin-right: 20px;'>🛰️</span><div style='font-family: \"Arial Black\"; font-size: 38px; line-height: 0.9; color: white;'>AGRO<span style='color:#39FF14;'>DATA</span><br>LITORAL</div></div>", unsafe_allow_html=True)
+        st.markdown("<div style='display: flex; align-items: center;'><span style='font-size: 80px; margin-right: 20px;'>🛰️</span><div style='font-family: \"Arial Black\"; font-size: 35px; line-height: 0.9; color: white;'>AGRO<span style='color:#39FF14;'>DATA</span><br>LITORAL</div></div>", unsafe_allow_html=True)
     with col_r:
         c_txt, c_img = st.columns([2, 1])
         with c_txt:
-            st.markdown(f"<div style='text-align: right;'><h2 style='margin:0; color:white;'>Leonardo Olivera</h2><p style='color:#39FF14; font-weight:bold; font-size: 22px; margin:0;'>📲 099417716</p><p style='font-size:12px; color:white; opacity:0.9;'>Desarrollador & Director de Proyecto | Litoral Operaciones Inmobiliarias</p></div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='text-align: right;'><h2 style='margin:0; color:white;'>Leonardo Olivera</h2><p style='color:#39FF14; font-weight:bold; font-size: 22px; margin:0;'>📲 099417716</p><p style='font-size:11px; color:white; opacity:0.9;'>Litoral Operaciones Inmobiliarias | Desarrollador de Software</p></div>", unsafe_allow_html=True)
         with c_img:
-            if os.path.exists("20250508_225422 (1).jpg"): st.image("20250508_225422 (1).jpg", width=140)
+            if os.path.exists("20250508_225422 (1).jpg"): st.image("20250508_225422 (1).jpg", width=130)
 
 st.markdown("## 🛰️ AUDITORÍA SATELITAL PREMIUM | Padrón 5900")
 st.write("---")
 
-# 3. TABS
-tabs = st.tabs(["📊 MÉTRICAS CIENTÍFICAS", "🗺️ MAPA DE TERRENO", "🔬 BASE DE DATOS IA"])
+# 5. TABS DE DATOS
+tabs = st.tabs(["📊 MÉTRICAS", "🗺️ TERRENO", "🔬 CIENCIA"])
 
 with tabs[0]:
-    st.markdown("#### 🎛️ Centro de Diagnóstico en Tiempo Real")
     c1, c2, c3 = st.columns(3)
     with c1:
-        st.metric("Salud Vegetal (NDVI)", "0.78", "+0.05")
-        st.markdown("<p style='color:white; font-size:13px;'><b>📡 Fuente ESA Sentinel-2:</b> Monitoreo multiespectral de alta resolución.</p>", unsafe_allow_html=True)
+        st.metric("Salud (NDVI)", "0.78", "+0.05")
+        st.markdown("<p style='color:white; font-size:12px;'>Fuente ESA Sentinel-2: Vigor fotosintético.</p>", unsafe_allow_html=True)
     with c2:
-        st.metric("Humedad Perfil (1m)", "14.2%", "-3.8%", delta_color="inverse")
-        st.markdown("<p style='color:white; font-size:13px;'><b>📡 Fuente NASA SMAP:</b> Humedad profunda mediante radiometría de banda L.</p>", unsafe_allow_html=True)
+        st.metric("Humedad (1m)", "14.2%", "-3.8%", delta_color="inverse")
+        st.markdown("<p style='color:white; font-size:12px;'>Fuente NASA SMAP: Reserva hídrica profunda.</p>", unsafe_allow_html=True)
     with c3:
-        st.metric("Resistencia Suelo", "2.5 MPa", "Firme")
-        st.markdown("<p style='color:white; font-size:13px;'><b>📡 Fuente NASA Landsat:</b> Infrarrojo térmico para geología y suelos.</p>", unsafe_allow_html=True)
+        st.metric("Suelo (MPa)", "2.5", "Firme")
+        st.markdown("<p style='color:white; font-size:12px;'>Fuente NASA Landsat: Capacidad de carga.</p>", unsafe_allow_html=True)
 
 with tabs[1]:
     lat, lon = -32.6585, -57.6455
@@ -88,54 +88,48 @@ with tabs[1]:
     folium.Polygon(locations=[[-32.6565, -57.6485], [-32.6565, -57.6425], [-32.6615, -57.6445], [-32.6615, -57.6475], [-32.6585, -57.6490]], color="#39FF14", weight=6, fill=True, fill_opacity=0.3).add_to(m)
     folium_static(m, width=1100)
 
-with tabs[2]:
-    st.markdown("#### 🔬 Glosario para Expertos (Agrónomos y Geólogos)")
-    st.info("Utilizamos constantes dieléctricas y puntos de marchitez para procesar la señal de los satélites de órbita baja.")
+# 6. SECCIÓN TÉCNICA Y ARGUMENTOS (BLINDADA)
+st.markdown('<div class="cientifico-box">', unsafe_allow_html=True)
+st.markdown("<h2 style='text-align:center;'>💎 Inversión 100% Útil: ¿Por qué elegirnos?</h2>", unsafe_allow_html=True)
+st.markdown("<p style='text-align:center; font-style:italic;'>Propiedad exclusiva de Litoral Operaciones Inmobiliarias</p><hr>", unsafe_allow_html=True)
 
-# 4. ARGUMENTO DE VENTA - POR QUÉ COMPRAR ES UNA INVERSIÓN ÚTIL
+# Bloques de Satélites
 st.markdown("""
-<div class="cientifico-box">
-    <h2 style="text-align:center; color:#1e4d2b !important;">💎 Por qué nuestro servicio Premium es una Inversión 100% Útil</h2>
-    <p style="text-align:center; font-style:italic;">Tecnología de Inteligencia Espacial aplicada al mercado de Litoral Operaciones Inmobiliarias</p>
-    <hr>
-    
-    <div class="fuente-box">
-        <h4>🇪🇺 Fuente ESA Sentinel-2</h4>
-        <p style="font-size:14px;">Sentinel-2 es una misión de la <b>Agencia Espacial Europea (ESA)</b> dentro del programa Copernicus, compuesta por tres satélites (2A, 2B y 2C) que ofrecen imágenes multiespectrales de alta resolución (10, 20 y 60 metros) en 13 bandas. Proporciona datos clave para monitorear la superficie terrestre y la vegetación con una frecuencia de revisión cada 5 días.</p>
-    </div>
-
-    <div class="fuente-box">
-        <h4>🇺🇸 Fuente NASA SMAP (Soil Moisture Active Passive)</h4>
-        <p style="font-size:14px;">Lanzada en 2015, monitorea la humedad del suelo globalmente cada 2-3 días. Utiliza un radiómetro de banda L para medir la superficie, proporcionando datos cruciales para la agricultura y predicción de sequías. Recopila datos de alta precisión en los primeros 5 cm y estimaciones de humedad en la <b>zona radicular</b> (Nivel 4), mejorando las previsiones agrícolas (USDA).</p>
-    </div>
-
-    <div class="fuente-box">
-        <h4>🇺🇸 Fuente NASA Landsat</h4>
-        <p style="font-size:14px;">El programa continuo más antiguo del mundo (desde 1972). Proporciona datos esenciales de resolución moderada (30m) para monitorear recursos naturales y agricultura. Los satélites <b>Landsat 8 y 9</b> capturan imágenes mediante sensores infrarrojos térmicos (TIRS) cada 8 días, permitiendo ver cambios reales en la estructura del suelo y crecimiento urbano.</p>
-    </div>
-
-    <div style="display: flex; flex-wrap: wrap; gap: 20px; margin-top:20px;">
-        <div style="flex: 1; min-width: 300px;">
-            <h4 style="color:#1e4d2b;">1. El Límite del Padrón (Geometría Oficial)</h4>
-            <p style="font-size:13px;">Google Earth es solo una 'foto'. En <b>AgroData Litoral</b> cruzamos datos con el <b>SNIG</b> y <b>Catastro Nacional</b>. Obtenemos los vértices exactos (mojones) y dibujamos el polígono legal de sus hectáreas.</p>
-        </div>
-        <div style="flex: 1; min-width: 300px;">
-            <h4 style="color:#1e4d2b;">2. Análisis de Campo Específico</h4>
-            <p style="font-size:13px;">Aplicamos <b>Recorte por Máscara</b>: procesamos solo los píxeles dentro de su padrón. El promedio de humedad y vigor es de SU tierra, no del vecino ni de la carretera.</p>
-        </div>
-        <div style="flex: 1; min-width: 300px;">
-            <h4 style="color:#1e4d2b;">3. Auditoría Real vs. Foto Histórica</h4>
-            <p style="font-size:13px;">Google Earth ofrece fotos que pueden tener meses o un año. <b>AgroData</b> es una radiografía actual cada 2-5 días para saber exactamente cuánta agua tiene disponible hoy su cultivo.</p>
-        </div>
-    </div>
-    
-    <div style="background-color: #1e4d2b; color: white; padding: 25px; border-radius: 15px; text-align:center; margin-top:25px;">
-        <h3 style="color:white !important;">🎯 Reporte Detallado Profesional: U$S 150</h3>
-        <p>Apto para Uruguay y cualquier país del mundo. Análisis científico de precisión.</p>
-        <p style="font-size: 26px; font-weight: bold; color: #39FF14;">📲 Envía coordenadas al 099417716</p>
-        <p style="font-size: 11px; opacity: 0.8;">Propiedad exclusiva de Litoral Operaciones Inmobiliarias | Desarrollador: Leonardo Olivera © 2026</p>
-    </div>
+<div class="fuente-item">
+    <b>🇪🇺 ESA Sentinel-2:</b> Misión de la Agencia Espacial Europea. 3 satélites (2A, 2B, 2C) con 13 bandas multiespectrales. 
+    Monitoreo cada 5 días para detectar falta de nitrógeno antes de que sea visible.
+</div>
+<div class="fuente-item">
+    <b>🇺🇸 NASA SMAP:</b> Soil Moisture Active Passive. Monitorea humedad profunda cada 2-3 días. 
+    Vital para entender la zona radicular (Nivel 4) y predecir sequías con precisión agrícola (USDA).
+</div>
+<div class="fuente-item">
+    <b>🇺🇸 NASA Landsat:</b> Registro continuo desde 1972. Satélites 8 y 9 con sensores infrarrojos térmicos (TIRS). 
+    Captura cambios reales en la estructura del suelo y recursos hídricos cada 8 días.
 </div>
 """, unsafe_allow_html=True)
 
-st.markdown("<div style='text-align: center; color: white; padding: 20px;'>© 2026 Litoral Operaciones Inmobiliarias - Derechos Reservados</div>", unsafe_allow_html=True)
+# Argumentos de Venta
+col_a, col_b, col_c = st.columns(3)
+with col_a:
+    st.markdown("### 1. Geometría Oficial")
+    st.write("No es solo una foto. Cruzamos datos con el SNIG y Catastro para dibujar el polígono legal exacto.")
+with col_b:
+    st.markdown("### 2. Análisis Específico")
+    st.write("Recorte por Máscara: Los satélites analizan solo los píxeles dentro de su padrón, no del vecino.")
+with col_c:
+    st.markdown("### 3. Auditoría vs Foto")
+    st.write("Google usa fotos viejas. Nosotros entregamos una radiografía actual cada 2-5 días.")
+
+# Cierre y Contacto
+st.markdown(f"""
+<div style="background-color: #1e4d2b; color: white; padding: 25px; border-radius: 15px; text-align:center; margin-top:25px;">
+    <h3 style="color:white !important;">Reporte Detallado Profesional: U$S 150</h3>
+    <p>Apto para Uruguay y cualquier país del mundo. Análisis científico de precisión.</p>
+    <p style="font-size: 26px; font-weight: bold; color: #39FF14;">📲 Envía coordenadas al 099417716</p>
+    <p style="font-size: 11px; opacity: 0.8;">Desarrollador: Leonardo Olivera © 2026</p>
+</div>
+""", unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True)
+
+st.markdown("<br><center>© 2026 Litoral Operaciones Inmobiliarias - Derechos Reservados</center>", unsafe_allow_html=True)
