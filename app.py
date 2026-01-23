@@ -5,7 +5,7 @@ from streamlit_folium import folium_static
 import folium
 import os
 
-# 1. CONFIGURACIÓN Y LIMPIEZA DE INTERFAZ
+# 1. CONFIGURACIÓN Y ELIMINACIÓN DE ESPACIOS FANTASMA
 st.set_page_config(page_title="AgroData Litoral - Premium", layout="wide")
 
 st.markdown("""
@@ -17,10 +17,10 @@ st.markdown("""
         background-size: cover; background-attachment: fixed;
     }
     
-    /* COMANDO DE ELIMINACIÓN DE RECUADROS FANTASMA */
+    /* BLOQUEO TOTAL DE RECUADROS BLANCOS VACÍOS */
     div[data-testid="stVerticalBlock"] > div:empty { display: none !important; }
     .element-container:empty { display: none !important; }
-    div.stTooltipIcon { display: none !important; } /* Elimina el icono de ayuda que genera el cuadro */
+    div.stTooltipIcon { display: none !important; }
 
     /* Métricas Tenues Estilo Cristal */
     div[data-testid="stMetric"] {
@@ -35,7 +35,7 @@ st.markdown("""
     div[data-testid="stMetricValue"] { color: #FFFFFF !important; font-weight: 900 !important; font-size: 2.5rem !important; }
     div[data-testid="stMetricLabel"] { color: #39FF14 !important; font-size: 1.1rem !important; }
 
-    /* Estilo de Pestañas Grandes */
+    /* Estilo de Pestañas */
     .stTabs [data-baseweb="tab-list"] { background-color: rgba(0,0,0,0.7); border-radius: 12px; padding: 10px; }
     .stTabs [data-baseweb="tab"] { font-size: 22px !important; color: white !important; font-weight: bold !important; }
     .stTabs [aria-selected="true"] { color: #39FF14 !important; border-bottom: 4px solid #39FF14 !important; }
@@ -53,7 +53,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 2. PANEL DE CONTROL (SIDEBAR)
+# 2. PANEL DE CONTROL (BARRA LATERAL)
 with st.sidebar:
     st.header("🔑 Panel de Control")
     st.write("Exclusivo: Leonardo Olivera")
@@ -87,20 +87,20 @@ with st.container():
 st.markdown("### 🛰️ AUDITORÍA SATELITAL PREMIUM | Padrón 5900")
 st.write("---")
 
-# 4. CUERPO DE DATOS (SIN TOOLTIPS PARA EVITAR RECUADROS)
+# 4. CUERPO DE DATOS (REFORMADO PARA EVITAR RECUADROS)
 tabs = st.tabs(["📊 MÉTRICAS CIENTÍFICAS", "🗺️ MAPA DE TERRENO", "🔬 CIENCIA APLICADA"])
 
 with tabs[0]:
     c1, c2, c3 = st.columns(3)
     with c1:
         st.metric("Salud Vegetal (NDVI)", "0.78", "+0.05")
-        st.markdown("<p style='color:white; font-size:13px;'>📡 <b>Fuente ESA Sentinel-2:</b> Mide el vigor fotosintético y salud foliar antes de ser visibles al ojo humano.</p>", unsafe_allow_html=True)
+        st.markdown("<p style='color:white; font-size:13px;'>📡 <b>Fuente ESA Sentinel-2:</b> Misión de la Agencia Espacial Europea. Detecta vigor fotosintético antes de ser visible al ojo.</p>", unsafe_allow_html=True)
     with c2:
         st.metric("Humedad Perfil (1m)", "14.2%", "-3.8%", delta_color="inverse")
         st.markdown("<p style='color:white; font-size:13px;'>📡 <b>Fuente NASA SMAP:</b> Monitoreo de humedad profunda (zona radicular) mediante radiometría de banda L.</p>", unsafe_allow_html=True)
     with c3:
         st.metric("Resistencia Suelo", "2.5 MPa", "Firme")
-        st.markdown("<p style='color:white; font-size:13px;'>📡 <b>Fuente NASA Landsat:</b> Infrarrojo térmico para capacidad de carga mecánica y firmeza del horizonte.</p>", unsafe_allow_html=True)
+        st.markdown("<p style='color:white; font-size:13px;'>📡 <b>Fuente NASA Landsat:</b> Infrarrojo térmico para medir la firmeza estructural del horizonte.</p>", unsafe_allow_html=True)
 
 with tabs[1]:
     lat, lon = -32.6585, -57.6455
@@ -109,23 +109,23 @@ with tabs[1]:
     folium_static(m, width=1100)
 
 with tabs[2]:
-    st.info("Utilizamos constantes dieléctricas y puntos de marchitez para procesar la señal satelital.")
+    st.info("Utilizamos constantes dieléctricas para procesar la señal de los satélites de órbita baja.")
     st.write("✅ **Sincronización:** MGAP, SNIG, DIEA, INIA e OPYPA (Uruguay).")
 
-# 5. SECCIÓN FINAL BLINDADA
+# 5. SECCIÓN FINAL LIMPIA (INVERSIÓN ÚTIL)
 st.markdown('<div class="cientifico-box">', unsafe_allow_html=True)
 st.markdown("<h2 style='text-align:center;'>💎 Porque comprar nuestro servicio Premium es una inversión 100% útil</h2>", unsafe_allow_html=True)
 st.markdown("<p style='text-align:center; font-style:italic;'>Propiedad exclusiva de Litoral Operaciones Inmobiliarias</p><hr>", unsafe_allow_html=True)
 
 st.markdown("""
 <div class="fuente-item">
-    <b>🇪🇺 Fuente ESA Sentinel-2:</b> Compuesta por tres satélites (2A, 2B, 2C) que ofrecen imágenes multiespectrales de alta resolución. Monitorea la vegetación cada 5 días para detectar falta de nitrógeno.
+    <b>🇪🇺 Fuente ESA Sentinel-2:</b> Compuesta por tres satélites que ofrecen imágenes multiespectrales. Detecta falta de nitrógeno con frecuencia de revisión cada 5 días.
 </div>
 <div class="fuente-item">
-    <b>🇺🇸 Fuente NASA SMAP:</b> Soil Moisture Active Passive. Monitorea humedad profunda (zona radicular) cada 2-3 días para predecir sequías con precisión científica (USDA).
+    <b>🇺🇸 Fuente NASA SMAP:</b> Soil Moisture Active Passive. Monitorea humedad profunda cada 2-3 días para predecir sequías con precisión científica (USDA).
 </div>
 <div class="fuente-item">
-    <b>🇺🇸 Fuente NASA Landsat:</b> El registro continuo más antiguo (desde 1972). Captura cambios reales en la estructura del suelo mediante sensores infrarrojos térmicos cada 8 días.
+    <b>🇺🇸 Fuente NASA Landsat:</b> El registro continuo más antiguo (desde 1972). Captura cambios reales en el suelo mediante sensores infrarrojos cada 8 días.
 </div>
 """, unsafe_allow_html=True)
 
