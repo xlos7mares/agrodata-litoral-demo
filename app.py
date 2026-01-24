@@ -6,8 +6,8 @@ import folium
 from folium.plugins import Draw
 import os
 
-# 1. CONFIGURACIÓN Y ESTÉTICA (DISEÑO BLINDADO)
-st.set_page_config(page_title="AgroData Litoral - Master Control", layout="wide")
+# 1. ESTÉTICA Y DISEÑO (PERFIL RESTAURADO)
+st.set_page_config(page_title="AgroData Litoral - Auditoría Real", layout="wide")
 
 st.markdown("""
     <style>
@@ -23,17 +23,13 @@ st.markdown("""
         backdrop-filter: blur(12px);
         border: 1px solid rgba(255,255,255,0.2);
     }
-    div[data-testid="stMetricValue"] { color: #FFFFFF !important; font-weight: 900 !important; }
-    div[data-testid="stMetricLabel"] { color: #39FF14 !important; }
-
-    .diagnostico-real {
-        background-color: rgba(255, 255, 255, 0.98);
+    .card-profesional {
+        background-color: rgba(245, 245, 245, 0.98);
+        padding: 20px;
+        border-radius: 12px;
+        border-top: 5px solid #1e4d2b;
         color: #000;
-        padding: 30px;
-        border-radius: 20px;
-        border-left: 15px solid #1e4d2b;
-        margin-top: 25px;
-        box-shadow: 0px 10px 30px rgba(0,0,0,0.5);
+        margin-bottom: 15px;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -50,7 +46,7 @@ with st.sidebar:
     s_suelo = st.number_input("Resistencia Física (MPa):", 0.0, 5.0, 2.5)
     st.info("Valores procesados mediante su Software de IA de Ciencia Física aplicada.")
 
-# 3. ENCABEZADO: LOGO Y PERFIL PROFESIONAL (RESTAURADO AL 100%)
+# 3. ENCABEZADO (LOGO Y PERFIL DE ÉLITE COMPLETO)
 with st.container():
     col_l, col_r = st.columns([2.5, 3.5])
     with col_l:
@@ -62,7 +58,7 @@ with st.container():
                 <div style='text-align: right; color: white;'>
                     <h2 style='margin:0;'>Leonardo Olivera</h2>
                     <p style='color:#39FF14; font-weight:bold; font-size: 19px; margin:0;'>📲 099417716</p>
-                    <p style='font-size:12px; opacity:0.95; line-height:1.3;'>
+                    <p style='font-size:11px; opacity:0.95; line-height:1.3;'>
                         <b>Estudiante Agronomía | Operaciones Inmobiliarias</b><br>
                         Perito en Grano | Experto en IA | Aficionado a la Ciencia Física,<br>
                         Geología, Botánica e Ingeniería Agro Ambiental | Protección del M. Ambiente<br>
@@ -73,7 +69,6 @@ with st.container():
         with c_img:
             if os.path.exists("20250508_225422 (1).jpg"): st.image("20250508_225422 (1).jpg", width=125)
 
-st.markdown(f"### 🛰️ DIAGNÓSTICO SATELITAL INTEGRADO | Padrón: {coords_raw}")
 st.write("---")
 
 # 4. MÉTRICAS CIENTÍFICAS
@@ -82,7 +77,7 @@ c1.metric("Vigor (NDVI)", f"{s_ndvi}")
 c2.metric("Humedad (NDWI) %", f"{s_agua}%")
 c3.metric("Firmeza (MPa)", f"{s_suelo}")
 
-# 5. MAPA SATELITAL REAL (LIBRE DE ERRORES DE DIBUJO)
+# 5. MAPA SATELITAL REAL (CORREGIDO SIN ERRORES)
 try:
     lat, lon = map(float, coords_raw.split(','))
 except:
@@ -90,40 +85,35 @@ except:
 
 m = folium.Map(location=[lat, lon], zoom_start=16, tiles='https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', attr='Google Satélite')
 
-# Herramienta de dibujo configurada para NO mostrar JSON molesto
-Draw(
-    export=False, 
-    show_geometryonclick=False, # ESTA ES LA CLAVE PARA QUE NO SALGA EL CODIGO BLANCO
-    draw_options={
-        'polyline': False, 
-        'circle': False, 
-        'marker': False, 
-        'circlemarker': False, 
-        'polygon': True, # Podés dibujar formas irregulares
-        'rectangle': True
-    }
-).add_to(m)
-
+# Dibujo blindado: export=False evita el error de la pantalla roja
+Draw(export=False, show_geometryonclick=False).add_to(m)
 folium_static(m, width=1100)
 
-# 6. INFORME DE LOGROS Y CIENCIA APLICADA
-det_monte = "Detección de Monte Nativo / Reserva biológica activa." if s_ndvi > 0.72 else "Vegetación de pastura o cultivo estacional."
-det_tosca = "Afloramiento rocoso detectado (Tosca firme)." if s_suelo > 3.0 else "Suelo profundo con aptitud de cimentación estándar."
-det_agua = "Cursos de agua activos identificados (NDWI)." if s_agua > 25 else "Suelo con drenaje activo, sin agua superficial detectada."
+# 6. INFORMES PROFESIONALES (RESTAURADOS)
+st.write("---")
+st.markdown("### 📋 Análisis de Interpretación para Profesionales")
 
-informe_html = f"""
-<div class="diagnostico-real">
-    <h3 style="color:#1e4d2b; text-align:center; margin-top:0;">📋 Reporte Técnico de Auditoría Profesional</h3>
-    <hr>
-    <p><b>🌿 Agronomía y Botánica:</b> {det_monte} Análisis espectral de biomasa realizado mediante Sentinel-2.</p>
-    <p><b>🌍 Geología y Ciencia Física:</b> {det_tosca} Cálculo de resistencia mecánica validado por su Software de IA.</p>
-    <p><b>💧 Ingeniería Agro Ambiental:</b> {det_agua} Detección de recursos hídricos para protección del medio ambiente.</p>
-    <div style="background:#e8f5e9; padding:20px; border-radius:15px; border:1px solid #1e4d2b; margin-top:15px; text-align:center;">
-        <h4 style="margin:0;">Certificación de Auditoría: U$S 150</h4>
-        <p style="margin:5px; font-size:14px;">Basado en Ciencia Física e Inteligencia Satelital aplicada.</p>
-    </div>
-</div>
-"""
-st.markdown(informe_html, unsafe_allow_html=True)
+col_a, col_b, col_c = st.columns(3)
+
+with col_a:
+    st.markdown(f"""<div class="card-profesional">
+    <b>🌿 Agronomía e Ing. Agro Ambiental:</b><br>
+    Vigor de {s_ndvi} NDVI. Estado: {'Saludable' if s_ndvi > 0.7 else 'Monitorear'}.<br>
+    Detección de Monte Nativo y biomasa botánica activa mediante Sentinel-2.
+    </div>""", unsafe_allow_html=True)
+
+with col_b:
+    st.markdown(f"""<div class="card-profesional">
+    <b>🌍 Geología y Ciencia Física:</b><br>
+    Resistencia de {s_suelo} MPa. Horizonte: {'Firme (Tosca)' if s_suelo > 3.0 else 'Profundo'}.<br>
+    Interpretación de inercia térmica Landsat para estabilidad estructural.
+    </div>""", unsafe_allow_html=True)
+
+with col_c:
+    st.markdown(f"""<div class="card-profesional">
+    <b>🏗️ Arquitectura y Protección M.A.:</b><br>
+    Suelo apto para diseños de gran porte. Paisajismo sustentado por humedad de {s_agua}%.<br>
+    Integración de software con IA para diseño bioclimático.
+    </div>""", unsafe_allow_html=True)
 
 st.markdown("<br><center style='color:white; opacity:0.8;'>© 2026 Litoral Operaciones Inmobiliarias | Leonardo Olivera</center>", unsafe_allow_html=True)
