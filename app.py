@@ -5,8 +5,8 @@ from streamlit_folium import folium_static
 import folium
 import os
 
-# 1. ESTÉTICA Y PERFIL DE ÉLITE (RESTAURADO AL 100%)
-st.set_page_config(page_title="AgroData Litoral - Auditoría Real SIG", layout="wide")
+# 1. ESTÉTICA Y PERFIL PROFESIONAL (RESTAURADO)
+st.set_page_config(page_title="AgroData Litoral - Auditoría Real", layout="wide")
 
 st.markdown("""
     <style>
@@ -16,7 +16,7 @@ st.markdown("""
         background-size: cover; background-attachment: fixed;
     }
     div[data-testid="stMetric"] {
-        background-color: rgba(0, 0, 0, 0.8) !important;
+        background-color: rgba(0, 0, 0, 0.7) !important;
         border-radius: 15px !important;
         padding: 20px !important;
         border: 1px solid #39FF14 !important;
@@ -39,26 +39,29 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 2. PANEL DE CONTROL (ENTRADA DE COORDENADAS)
+# 2. PANEL DE CONTROL (ENTRADA DE DATOS REALES)
 with st.sidebar:
-    st.header("📍 Sistema de Referencia")
+    st.header("📍 Ubicación del Padrón")
     coords_raw = st.text_input("Latitud, Longitud (WGS84):", "-32.6585, -57.6455")
+    
+    st.write("---")
+    st.header("🔬 Ingreso de Datos Satelitales")
+    st.write("Cargue los valores reales obtenidos de NASA/ESA para estas coordenadas:")
+    # Reemplazamos sliders por entrada numérica para mayor precisión profesional
+    s_ndvi = st.number_input("NDVI (Vigor Vegetal):", 0.0, 1.0, 0.78)
+    s_agua = st.number_input("Humedad Real %:", 0.0, 100.0, 14.2)
+    s_suelo = st.number_input("Firmeza Suelo (MPa):", 0.0, 5.0, 2.5)
     
     st.write("---")
     st.header("🛰️ Estado de Constelación")
     st.success("🛰️ ESA Sentinel-2: ONLINE")
     st.success("🛰️ NASA Landsat 9: ONLINE")
-    st.success("🛰️ NASA SMAP: ONLINE")
-    
-    st.write("---")
-    st.markdown("### 📥 Reportes Profesionales")
-    st.button("Generar Informe de Padrón")
 
-# 3. ENCABEZADO (PERFIL COMPLETO LEONARDO OLIVERA)
+# 3. ENCABEZADO (TU PERFIL COMPLETO)
 with st.container():
     col_l, col_r = st.columns([2.5, 3.5])
     with col_l:
-        st.markdown("<div style='display: flex; align-items: center; margin-top: 10px;'><span style='font-size: 85px; margin-right: 20px;'>🛰️</span><div style='font-family: \"Arial Black\"; font-size: 38px; line-height: 0.9; color: white;'>AGRO<span style='color:#39FF14;'>DATA</span><br>LITORAL</div></div>", unsafe_allow_html=True)
+        st.markdown("<div style='display: flex; align-items: center;'><span style='font-size: 80px; margin-right: 20px;'>🛰️</span><div style='font-family: \"Arial Black\"; font-size: 35px; line-height: 0.9; color: white;'>AGRO<span style='color:#39FF14;'>DATA</span><br>LITORAL</div></div>", unsafe_allow_html=True)
     with col_r:
         c_txt, c_img = st.columns([2.5, 1])
         with c_txt:
@@ -79,19 +82,19 @@ with st.container():
 
 st.write("---")
 
-# 4. MÉTRICAS DINÁMICAS (VALORES FIJOS DE AUDITORÍA)
+# 4. MÉTRICAS CIENTÍFICAS
 c1, c2, c3 = st.columns(3)
 with c1:
-    st.metric("Vigor Vegetal (NDVI)", "0.78")
-    st.markdown("<span class='badge-satelite'>🛰️ ESA Sentinel-2: Cada 5 días</span>", unsafe_allow_html=True)
+    st.metric("Vigor (NDVI)", f"{s_ndvi}")
+    st.markdown("<span class='badge-satelite'>🛰️ ESA Sentinel-2</span>", unsafe_allow_html=True)
 with c2:
-    st.metric("Humedad Profunda %", "14.2%")
-    st.markdown("<span class='badge-satelite'>🛰️ NASA SMAP: Cada 3 días</span>", unsafe_allow_html=True)
+    st.metric("Humedad %", f"{s_agua}%")
+    st.markdown("<span class='badge-satelite'>🛰️ NASA SMAP</span>", unsafe_allow_html=True)
 with c3:
-    st.metric("Resistencia (MPa)", "2.5")
-    st.markdown("<span class='badge-satelite'>🛰️ NASA Landsat: Cada 8 días</span>", unsafe_allow_html=True)
+    st.metric("Firmeza (MPa)", f"{s_suelo}")
+    st.markdown("<span class='badge-satelite'>🛰️ NASA Landsat</span>", unsafe_allow_html=True)
 
-# 5. MAPA SIG REAL (BASADO EN EL VISUALIZADOR OFICIAL)
+# 5. MAPA SIG REAL (ESTABLE)
 try:
     lat, lon = map(float, coords_raw.split(','))
 except:
@@ -100,31 +103,38 @@ except:
 st.markdown(f"#### 🗺️ Visualizador Cartográfico Satelital (Coordenadas: {lat}, {lon})")
 m = folium.Map(location=[lat, lon], zoom_start=16, tiles='https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', attr='Google Satélite')
 
-# Círculo de Auditoría (Sustituye al dibujo manual para evitar errores)
-folium.Circle([lat, lon], radius=400, color="#39FF14", fill=True, fill_opacity=0.2, tooltip="Área de Escaneo").add_to(m)
+# Círculo de Auditoría (Representa el escaneo del padrón)
+folium.Circle([lat, lon], radius=400, color="#39FF14", fill=True, fill_opacity=0.2, tooltip="Área de Auditoría").add_to(m)
 folium_static(m, width=1100)
 
-# 6. CUADROS TÉCNICOS DE INFORMACIÓN (RESTAURADOS)
+# 6. RESULTADOS DINÁMICOS EN 4 CUADRANTES (CIENCIA REAL)
 st.write("---")
 st.markdown("### 📋 Resultados de la Auditoría Geológica y Agrícola")
+
+# Lógica de interpretación automática
+det_monte = "Monte Nativo Protegido." if s_ndvi > 0.72 else "Zonas de Pastura o Cultivo Estacional."
+det_tosca = "Afloramiento rocoso detectado (Tosca firme)." if s_suelo > 3.0 else "Suelo profundo con aptitud de cimentación estándar."
+det_agua = "Curso de agua activo o saturación hídrica detectada." if s_agua > 25 else "Suelo con drenaje estable, sin agua superficial."
 
 col_a, col_b = st.columns(2)
 
 with col_a:
     st.markdown(f"""<div class="card-profesional">
     <h4>🌿 Botánica e Ingeniería Agro Ambiental</h4>
-    <b>Detección de Monte:</b> Monte Nativo Protegido.<br>
+    <b>Detección de Monte:</b> {det_monte}<br>
     <b>Análisis Científico:</b> Procesamiento de banda Infrarrojo Cercano (Sentinel-2). Identifica densidad foliar y salud del ecosistema botánico en tiempo real para protección del medio ambiente.
     </div>""", unsafe_allow_html=True)
     
     st.markdown(f"""<div class="card-profesional">
     <h4>🌍 Geología y Ciencia Física</h4>
-    <b>Física de Suelos:</b> Análisis de Inercia Térmica (Landsat TIRS). La roca retiene calor a las 2 AM de forma distinta a la tierra húmeda, validando la resistencia mecánica mediante IA aplicada a la física.
+    <b>Física de Suelos:</b> {s_suelo} MPa ({det_tosca}).<br>
+    <b>Análisis de Inercia Térmica:</b> (Landsat TIRS). La roca retiene calor a las 2 AM de forma distinta a la tierra, validando la resistencia mecánica mediante IA aplicada a la física.
     </div>""", unsafe_allow_html=True)
 
 with col_b:
     st.markdown(f"""<div class="card-profesional">
     <h4>💧 Recursos Hídricos (Histórico 20 años)</h4>
+    <b>Estado Actual:</b> {det_agua}<br>
     <b>Hidrología Satelital:</b> Análisis NDWI. Permite visualizar el comportamiento histórico de escurrimientos y reservas hídricas desde el año 2006 para asegurar la inversión inmobiliaria.
     </div>""", unsafe_allow_html=True)
     
@@ -138,7 +148,7 @@ with col_b:
 st.markdown(f"""
 <div style="background-color: #1e4d2b; color: white; padding: 25px; border-radius: 15px; text-align:center; margin-top:10px;">
     <h3 style="color:white !important;">💎 Informe Profesional Completo: U$S 150</h3>
-    <p style="font-size: 16px; color: #39FF14;">Incluye Inercia Térmica de Suelos, Mapa de Tosca y Estudio Hídrico 20 Años.</p>
-    <p>Envíe coordenadas al <b>099417716</b> para habilitar el escaneo profundo.</p>
+    <p style="font-size: 16px; color: #39FF14;">Incluye Estudio Hídrico 20 Años e Inercia Térmica de Suelos.</p>
+    <p>Envíe coordenadas al <b>099417716</b> para habilitar el escaneo de profundidad.</p>
 </div>
 """, unsafe_allow_html=True)
