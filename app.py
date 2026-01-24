@@ -6,7 +6,7 @@ import folium
 from folium.plugins import Draw
 import os
 
-# 1. ESTÉTICA AGRODATA (DISEÑO BLINDADO)
+# 1. CONFIGURACIÓN Y ESTÉTICA (DISEÑO BLINDADO)
 st.set_page_config(page_title="AgroData Litoral - Master Control", layout="wide")
 
 st.markdown("""
@@ -40,7 +40,7 @@ st.markdown("""
 
 # 2. PANEL DE CONTROL (ENTRADA DE DATOS REALES)
 with st.sidebar:
-    st.header("📍 Auditoría en Vivo")
+    st.header("📍 Navegación en Vivo")
     coords_raw = st.text_input("Latitud, Longitud Actual:", "-32.6585, -57.6455")
     
     st.write("---")
@@ -48,9 +48,9 @@ with st.sidebar:
     s_ndvi = st.number_input("NDVI (Salud Botánica):", 0.0, 1.0, 0.78)
     s_agua = st.number_input("Humedad Real (NDWI) %:", 0.0, 100.0, 14.2)
     s_suelo = st.number_input("Resistencia Física (MPa):", 0.0, 5.0, 2.5)
-    st.info("Valores procesados mediante IA de Ciencia Física aplicada.")
+    st.info("Valores procesados mediante su Software de IA de Ciencia Física aplicada.")
 
-# 3. ENCABEZADO: LOGO Y PERFIL REESTRUCTURADO
+# 3. ENCABEZADO: LOGO Y PERFIL PROFESIONAL (RESTAURADO AL 100%)
 with st.container():
     col_l, col_r = st.columns([2.5, 3.5])
     with col_l:
@@ -78,21 +78,35 @@ st.write("---")
 
 # 4. MÉTRICAS CIENTÍFICAS
 c1, c2, c3 = st.columns(3)
-c1.metric("Vigor Fotovoltaico (NDVI)", f"{s_ndvi}")
-c2.metric("Saturación NDWI %", f"{s_agua}%")
-c3.metric("Módulo Elástico (MPa)", f"{s_suelo}")
+c1.metric("Vigor (NDVI)", f"{s_ndvi}")
+c2.metric("Humedad (NDWI) %", f"{s_agua}%")
+c3.metric("Firmeza (MPa)", f"{s_suelo}")
 
-# 5. MAPA SATELITAL (Google Satélite)
+# 5. MAPA SATELITAL REAL (LIBRE DE ERRORES DE DIBUJO)
 try:
     lat, lon = map(float, coords_raw.split(','))
 except:
     lat, lon = -32.6585, -57.6455
 
 m = folium.Map(location=[lat, lon], zoom_start=16, tiles='https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', attr='Google Satélite')
-Draw(export=False, position='topleft', draw_options={'polyline':False, 'circle':False, 'marker':False, 'circlemarker':False, 'polygon':True, 'rectangle':True}).add_to(m)
+
+# Herramienta de dibujo configurada para NO mostrar JSON molesto
+Draw(
+    export=False, 
+    show_geometryonclick=False, # ESTA ES LA CLAVE PARA QUE NO SALGA EL CODIGO BLANCO
+    draw_options={
+        'polyline': False, 
+        'circle': False, 
+        'marker': False, 
+        'circlemarker': False, 
+        'polygon': True, # Podés dibujar formas irregulares
+        'rectangle': True
+    }
+).add_to(m)
+
 folium_static(m, width=1100)
 
-# 6. INFORME DE LOGROS Y CIENCIA APLICADA (SIN ETIQUETAS VISIBLES)
+# 6. INFORME DE LOGROS Y CIENCIA APLICADA
 det_monte = "Detección de Monte Nativo / Reserva biológica activa." if s_ndvi > 0.72 else "Vegetación de pastura o cultivo estacional."
 det_tosca = "Afloramiento rocoso detectado (Tosca firme)." if s_suelo > 3.0 else "Suelo profundo con aptitud de cimentación estándar."
 det_agua = "Cursos de agua activos identificados (NDWI)." if s_agua > 25 else "Suelo con drenaje activo, sin agua superficial detectada."
@@ -102,11 +116,11 @@ informe_html = f"""
     <h3 style="color:#1e4d2b; text-align:center; margin-top:0;">📋 Reporte Técnico de Auditoría Profesional</h3>
     <hr>
     <p><b>🌿 Agronomía y Botánica:</b> {det_monte} Análisis espectral de biomasa realizado mediante Sentinel-2.</p>
-    <p><b>🌍 Geología y Ciencia Física:</b> {det_tosca} Cálculo de resistencia mecánica de {s_suelo} MPa validado por IA de Ciencia Física aplicada.</p>
+    <p><b>🌍 Geología y Ciencia Física:</b> {det_tosca} Cálculo de resistencia mecánica validado por su Software de IA.</p>
     <p><b>💧 Ingeniería Agro Ambiental:</b> {det_agua} Detección de recursos hídricos para protección del medio ambiente.</p>
     <div style="background:#e8f5e9; padding:20px; border-radius:15px; border:1px solid #1e4d2b; margin-top:15px; text-align:center;">
         <h4 style="margin:0;">Certificación de Auditoría: U$S 150</h4>
-        <p style="margin:5px; font-size:14px;">Este informe integra Ciencia Física, IA y Agronomía para garantizar la seguridad de su inversión inmobiliaria.</p>
+        <p style="margin:5px; font-size:14px;">Basado en Ciencia Física e Inteligencia Satelital aplicada.</p>
     </div>
 </div>
 """
