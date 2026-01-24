@@ -5,7 +5,7 @@ from streamlit_folium import folium_static
 import folium
 import os
 
-# 1. CONFIGURACIÓN Y ESTÉTICA "TECH-PREMIUM"
+# 1. CONFIGURACIÓN Y ESTÉTICA PREMIUM
 st.set_page_config(page_title="AgroData Litoral - Master Control", layout="wide")
 
 st.markdown("""
@@ -29,8 +29,8 @@ st.markdown("""
     div[data-testid="stMetricValue"] { color: #FFFFFF !important; font-weight: 900 !important; font-size: 2.5rem !important; }
     div[data-testid="stMetricLabel"] { color: #39FF14 !important; font-size: 1.1rem !important; }
 
-    /* Caja de Informe Multi-Perfil (ELIMINA ERRORES DE CÓDIGO) */
-    .informe-premium {
+    /* Caja de Informe (CORRECCIÓN DEFINITIVA DE ETIQUETAS) */
+    .informe-final {
         background-color: rgba(255, 255, 255, 0.98);
         color: #000;
         padding: 40px;
@@ -38,11 +38,12 @@ st.markdown("""
         border-left: 15px solid #1e4d2b;
         margin-top: 30px;
         line-height: 1.6;
+        box-shadow: 0px 10px 30px rgba(0,0,0,0.5);
     }
     </style>
     """, unsafe_allow_html=True)
 
-# 2. PANEL DE CONTROL Y SIMULADOR (BARRA LATERAL)
+# 2. BARRA LATERAL: PANEL DE CONTROL Y SIMULADOR
 with st.sidebar:
     st.header("🔑 Panel de Control")
     st.write("Solo para Leonardo Olivera")
@@ -81,7 +82,7 @@ with st.container():
 st.markdown("### 🛰️ AUDITORÍA SATELITAL PREMIUM | Padrón 5900")
 st.write("---")
 
-# 4. MÉTRICAS DINÁMICAS (CONECTADAS AL SIMULADOR)
+# 4. VALORES DINÁMICOS
 c1, c2, c3 = st.columns(3)
 with c1:
     st.metric("Salud del Cultivo (NDVI)", f"{s_ndvi}", f"{s_var:+.2f}")
@@ -93,32 +94,33 @@ with c3:
     st.metric("Firmeza del Suelo", f"{s_suelo} MPa", "Firme")
     st.write("📡 **NASA Landsat:** Firmeza estructural.")
 
-# 5. INFORME MULTI-PERFIL (CORREGIDO Y SIN CÓDIGO SUELTO)
+# 5. INFORME MULTI-PERFIL (CORRECCIÓN DEFINITIVA)
 msg_agro = "vigor alto y saludable" if s_ndvi > 0.6 else "estrés hídrico detectado"
 msg_suelo = "firme para construcción pesada" if s_suelo > 2.0 else "suelo blando, requiere refuerzo"
 
-st.markdown(f"""
-<div class="informe-premium">
-    <h3 style="color:#1e4d2b; text-align:center;">📋 Informe de Interpretación Multi-Perfil</h3>
+# Generamos el contenido HTML en una sola variable para evitar errores de renderizado
+informe_html = f"""
+<div class="informe-final">
+    <h3 style="color:#1e4d2b; text-align:center; margin-top:0;">📋 Informe de Interpretación Multi-Perfil</h3>
     <hr>
-    <p><b>🌿 Para Ingenieros Agrónomos:</b> El NDVI de {s_ndvi} ({s_var:+.2f}) indica un estado de <b>{msg_agro}</b>. Las hojas absorben gran cantidad de luz roja (clorofila), confirmando un dosel denso y crecimiento activo según la misión ESA Sentinel-2.</p>
+    <p><b>🌿 Para Ingenieros Agrónomos:</b> El NDVI de {s_ndvi} ({s_var:+.2f}) indica un estado de <b>{msg_agro}</b>. Las hojas absorben gran cantidad de luz roja (clorofila), confirmando un crecimiento activo según la misión ESA Sentinel-2.</p>
     
-    <p><b>🌍 Para Geólogos:</b> Los {s_suelo} MPa obtenidos mediante sensores térmicos de NASA Landsat confirman un suelo <b>{msg_suelo}</b>. La humedad de {s_agua}% en la zona radicular (Nivel 4 SMAP) valida la estabilidad del terreno para proyectos de gran escala.</p>
+    <p><b>🌍 Para Geólogos:</b> Los {s_suelo} MPa obtenidos mediante sensores térmicos de NASA Landsat confirman un suelo <b>{msg_suelo}</b>. La humedad de {s_agua}% en la zona radicular valida la estabilidad del terreno para proyectos de gran escala.</p>
     
-    <p><b>🏗️ Para Arquitectos (Diseño y Estética):</b> Con una firmeza de {s_suelo} MPa, el terreno es apto para diseños de gran porte sin riesgos estructurales. El vigor verde del entorno (NDVI {s_ndvi}) garantiza un paisajismo frondoso y sostenible para la estética final de la obra.</p>
+    <p><b>🏗️ Para Arquitectos (Diseño y Estética):</b> Con una firmeza de {s_suelo} MPa, el terreno es apto para diseños de gran porte. El vigor verde del entorno (NDVI {s_ndvi}) garantiza un paisajismo frondoso y sostenible para la estética final de la obra.</p>
     
     <div style="background:#e8f5e9; padding:25px; border-radius:15px; border:1px solid #1e4d2b; margin-top:20px;">
         <h4 style="margin:0;">💎 Inversión 100% Útil: ¿Por qué pagar u$s 150?</h4>
-        <p style="font-size:14px; margin-top:10px;">Google Earth ofrece fotos históricas que pueden tener meses. Nuestra <b>Auditoría en Tiempo Real</b> cruza coordenadas de Catastro con datos de la NASA cada 2 a 5 días. Usted no paga por un dibujo, paga por la seguridad técnica y jurídica de su tierra.</p>
+        <p style="font-size:14px; margin-top:10px;">Google Earth ofrece fotos históricas. Nuestra <b>Auditoría en Tiempo Real</b> cruza coordenadas de Catastro con datos de la NASA cada 2 a 5 días. Usted no paga por un dibujo, paga por la seguridad técnica de su tierra.</p>
     </div>
     
     <div style="background-color: #1e4d2b; color: white; padding: 25px; border-radius: 15px; text-align:center; margin-top:25px;">
         <h3 style="color:white !important; margin:0;">Reporte Detallado Profesional: U$S 150</h3>
         <p style="font-size: 26px; font-weight: bold; color: #39FF14; margin:5px;">📲 Envía coordenadas al 099417716</p>
-        <p style="font-size: 11px; opacity: 0.8;">Creado por Leonardo Olivera © 2026 | Litoral Operaciones Inmobiliarias</p>
     </div>
 </div>
-""", unsafe_allow_html=True)
+"""
+st.markdown(informe_html, unsafe_allow_html=True)
 
 # 6. MAPA FINAL
 st.write("---")
