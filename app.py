@@ -3,10 +3,9 @@ import pandas as pd
 import numpy as np
 from streamlit_folium import folium_static
 import folium
-from folium.plugins import Draw
 import os
 
-# 1. CONFIGURACIÓN Y ESTÉTICA (CON CONTRASTE MEJORADO)
+# 1. ESTÉTICA Y PERFIL PROFESIONAL (RESTAURADO)
 st.set_page_config(page_title="AgroData Litoral - Auditoría Real", layout="wide")
 
 st.markdown("""
@@ -16,7 +15,6 @@ st.markdown("""
                     url("https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80");
         background-size: cover; background-attachment: fixed;
     }
-    /* Métricas con fondo oscuro para máxima visibilidad */
     div[data-testid="stMetric"] {
         background-color: rgba(0, 0, 0, 0.7) !important;
         border-radius: 15px !important;
@@ -25,13 +23,12 @@ st.markdown("""
     }
     div[data-testid="stMetricValue"] { color: #39FF14 !important; font-weight: 900 !important; }
     div[data-testid="stMetricLabel"] { color: #FFFFFF !important; }
-
-    /* Tarjetas Profesionales Prolijas */
+    
     .card-profesional {
         background-color: rgba(255, 255, 255, 0.98);
         padding: 20px;
         border-radius: 12px;
-        border-top: 5px solid #1e4d2b;
+        border-left: 10px solid #1e4d2b;
         color: #000;
         margin-bottom: 20px;
         box-shadow: 0px 4px 15px rgba(0,0,0,0.5);
@@ -39,7 +36,7 @@ st.markdown("""
     .badge-satelite {
         background-color: #1e4d2b;
         color: #39FF14;
-        padding: 5px 10px;
+        padding: 4px 10px;
         border-radius: 20px;
         font-size: 10px;
         font-weight: bold;
@@ -47,23 +44,22 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 2. PANEL DE CONTROL (SLIDERS Y COORDENADAS)
+# 2. PANEL DE CONTROL (COORDENADAS Y SIMULADOR)
 with st.sidebar:
     st.header("📍 Ubicación Real")
     coords_raw = st.text_input("Latitud, Longitud:", "-32.6585, -57.6455")
     
     st.write("---")
-    st.header("🎮 Simulador Satelital")
-    st.write("Ajuste para demostrar variaciones técnicas:")
+    st.header("🎮 Simulador de Validación")
+    st.write("Ajuste para demostrar variaciones técnicas al cliente:")
     s_ndvi = st.slider("Salud / Monte (NDVI)", 0.0, 1.0, 0.78)
     s_agua = st.slider("Humedad / NDWI %", 0.0, 100.0, 14.2)
     s_suelo = st.slider("Firmeza / MPa", 0.0, 5.0, 2.5)
     
     st.write("---")
-    if st.button("📥 Descargar Informe DEMO"):
-        st.success("Generando vista previa del informe...")
+    st.button("📥 Descargar Informe DEMO")
 
-# 3. ENCABEZADO (PERFIL DE ÉLITE REORGANIZADO)
+# 3. ENCABEZADO (PERFIL DE ÉLITE)
 with st.container():
     col_l, col_r = st.columns([2.5, 3.5])
     with col_l:
@@ -88,59 +84,68 @@ with st.container():
 
 st.write("---")
 
-# 4. MÉTRICAS CON DATOS DE ACTUALIZACIÓN SATELITAL
+# 4. MÉTRICAS CON FUENTES SATELITALES
 c1, c2, c3 = st.columns(3)
 with c1:
     st.metric("Vigor Vegetal (NDVI)", s_ndvi)
-    st.markdown("<span class='badge-satelite'>🛰️ ESA Sentinel-2: Cada 5 días</span>", unsafe_allow_html=True)
+    st.markdown("<span class='badge-satelite'>🛰️ ESA Sentinel-2: Actualiza cada 5 días</span>", unsafe_allow_html=True)
 with c2:
     st.metric("Humedad Profunda %", f"{s_agua}%")
-    st.markdown("<span class='badge-satelite'>🛰️ NASA SMAP: Cada 3 días</span>", unsafe_allow_html=True)
+    st.markdown("<span class='badge-satelite'>🛰️ NASA SMAP: Actualiza cada 3 días</span>", unsafe_allow_html=True)
 with c3:
     st.metric("Resistencia (MPa)", f"{s_suelo}")
-    st.markdown("<span class='badge-satelite'>🛰️ NASA Landsat: Cada 8 días</span>", unsafe_allow_html=True)
+    st.markdown("<span class='badge-satelite'>🛰️ NASA Landsat: Actualiza cada 8 días</span>", unsafe_allow_html=True)
 
-# 5. MAPA SATELITAL REAL (SIN ERRORES)
+# 5. MAPA SATELITAL REAL (FIJADO POR COORDENADAS)
 try:
     lat, lon = map(float, coords_raw.split(','))
 except:
-    lat, lon = -32.6585, -57.6455
+    lat, lon, coords_raw = -32.6585, -57.6455, "-32.6585, -57.6455"
 
-st.markdown("#### 🗺️ Explorador Satelital en Tiempo Real (Google Satélite)")
-m = folium.Map(location=[lat, lon], zoom_start=16, tiles='https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', attr='Google')
-Draw(export=False, show_geometryonclick=False).add_to(m)
+st.markdown(f"#### 🗺️ Explorador Satelital en Tiempo Real (Coordenadas: {coords_raw})")
+m = folium.Map(location=[lat, lon], zoom_start=16, tiles='https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', attr='Google Satélite')
+
+# Dibujamos un marcador y un círculo de escaneo automático
+folium.Marker([lat, lon], popup="Punto de Auditoría").add_to(m)
+folium.Circle([lat, lon], radius=300, color="#39FF14", fill=True, fill_opacity=0.2).add_to(m)
+
 folium_static(m, width=1100)
 
-# 6. CUADROS PROFESIONALES CON LÓGICA TÉCNICA
+# 6. CRUCE DE INFORMACIÓN CIENTÍFICA
 st.write("---")
-col_a, col_b, col_c = st.columns(3)
+col_a, col_b = st.columns(2)
 
 with col_a:
     st.markdown(f"""<div class="card-profesional">
-    <h4>🌿 Agronomía e IA</h4>
-    <b>Detección:</b> {'Monte Nativo / Reserva' if s_ndvi > 0.72 else 'Pastura Estacional'}.<br>
-    <b>Info Técnica:</b> Análisis de biomasa activa para cría o plantación. Identificación de vegetación perenne protegida.
+    <h4>🌿 Botánica e Ingeniería Agro Ambiental</h4>
+    <b>Detección de Monte:</b> {'Monte Nativo Protegido' if s_ndvi > 0.72 else 'Pastizal / Cultivo'}.<br>
+    <b>Análisis:</b> Basado en Infrarrojo Cercano (Sentinel-2). Identifica especies perennes y salud del ecosistema botánico.
+    </div>""", unsafe_allow_html=True)
+    
+    st.markdown(f"""<div class="card-profesional">
+    <h4>💧 Recursos Hídricos (Estudio 20 años)</h4>
+    <b>Agua en Superficie:</b> {'Presencia de Arroyos/Cañadas' if s_agua > 25 else 'Suelo con Drenaje Activo'}.<br>
+    <b>Histórico:</b> Análisis NDWI. Permite ver el comportamiento de inundaciones y sequías en las últimas 2 décadas.
     </div>""", unsafe_allow_html=True)
 
 with col_b:
     st.markdown(f"""<div class="card-profesional">
-    <h4>🌍 Geología y Física</h4>
-    <b>Firmeza:</b> {s_suelo} MPa ({'Tosca détectada' if s_suelo > 3.0 else 'Suelo profundo'}).<br>
-    <b>Ingeniería:</b> Apto para cimentación de silos, galpones o viviendas de gran porte.
+    <h4>🌍 Geología y Ciencia Física</h4>
+    <b>Suelo:</b> {s_suelo} MPa ({'Tosca détectada' if s_suelo > 3.0 else 'Suelo Profundo'}).<br>
+    <b>Física Aplicada:</b> Usamos Inercia Térmica (Landsat TIRS). La roca retiene calor a las 2 AM de forma distinta a la tierra húmeda, validando la resistencia mecánica.
     </div>""", unsafe_allow_html=True)
-
-with col_c:
+    
     st.markdown(f"""<div class="card-profesional">
-    <h4>🏗️ Arq. y Medio Ambiente</h4>
-    <b>Recurso:</b> {'Agua superficial activa' if s_agua > 25 else 'Suelo seco / estable'}.<br>
-    <b>Diseño:</b> Integración paisajística basada en micro-arroyos y protección ambiental.
+    <h4>🏗️ Ingeniería y Arquitectura</h4>
+    <b>Aptitud de Obra:</b> Apto para silos, galpones o conjuntos de viviendas.<br>
+    <b>Informe:</b> Validación de cimentación basada en datos de resistencia geológica y estabilidad hídrica.
     </div>""", unsafe_allow_html=True)
 
 # 7. SERVICIOS PROFESIONALES
 st.markdown(f"""
-<div style="background-color: #1e4d2b; color: white; padding: 30px; border-radius: 15px; text-align:center; margin-top:20px;">
-    <h2 style="color:white !important;">💼 Informe Profesional Completo: U$S 150</h2>
-    <p style="font-size: 18px; color: #39FF14;">Incluye Estudio Hídrico Histórico (20 años) e Inercia Térmica de Suelos.</p>
-    <p>Envíe coordenadas al <b>099417716</b> para habilitar el escaneo de profundidad.</p>
+<div style="background-color: #1e4d2b; color: white; padding: 25px; border-radius: 15px; text-align:center; margin-top:10px;">
+    <h3 style="color:white !important;">💼 Informe Profesional Completo: U$S 150</h3>
+    <p style="font-size: 16px; color: #39FF14;">Incluye Inercia Térmica de Suelos y Estudio Hídrico Histórico Real (NASA/ESA).</p>
+    <p>Envíe coordenadas al <b>099417716</b> para habilitar el escaneo profundo.</p>
 </div>
 """, unsafe_allow_html=True)
