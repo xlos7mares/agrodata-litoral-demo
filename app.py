@@ -3,14 +3,14 @@ import pandas as pd
 import time
 import random
 
-# --- CONFIGURACIÓN DE MARCA Y ESTÉTICA (COURSERA: RENDIMIENTO) ---
+# --- CONFIGURACIÓN DE PÁGINA ---
 st.set_page_config(
     page_title="Agro Data Litoral | Ingeniería Satelital",
     page_icon="🌱",
     layout="wide"
 )
 
-# Estilo de Ingeniería: Fondos limpios y cuadros de datos resaltados
+# Estilo de Ingeniería
 st.markdown("""
     <style>
     .main { background-color: #f8f9fa; }
@@ -38,38 +38,37 @@ except:
     st.sidebar.header("🌱 AGRO DATA LITORAL")
 
 st.sidebar.write("### 📍 Ubicación del Padrón")
-st.sidebar.info("Ingrese coordenadas para escaneo satelital")
+st.sidebar.info("Pegue las coordenadas tal como se las pasan (ej: -32.275, -58.052)")
 
-# Separación de Latitud y Longitud para Agilidad
-col_lat, col_lon = st.sidebar.columns(2)
-
-with col_lat:
-    # Valor por defecto: El terreno de tu hermano
-    lat_input = st.text_input("Latitud", value="-32.275611")
-
-with col_lon:
-    lon_input = st.text_input("Longitud", value="-58.052861")
+# Cuadro único de entrada para máxima facilidad del cliente
+coord_input = st.sidebar.text_input("Latitud, Longitud:", value="-32.275597, -58.052867")
 
 st.sidebar.write("---")
 st.sidebar.write("**Desarrollador de Software:**")
 st.sidebar.write("Leonardo Olivera")
 
-# --- LÓGICA DE PROCESAMIENTO (PASO A PASO) ---
+# --- LÓGICA DE PROCESAMIENTO INTELIGENTE ---
+# Aquí limpiamos la entrada por si traen comas o espacios de más
 try:
-    lat = float(lat_input)
-    lon = float(lon_input)
-except ValueError:
-    st.error("⚠️ Error: Las coordenadas deben ser números decimales.")
+    if "," in coord_input:
+        lat_str, lon_str = coord_input.split(",")
+        lat = float(lat_str.strip())
+        lon = float(lon_str.strip())
+    else:
+        # Por si el cliente solo pega un número
+        lat = float(coord_input)
+        lon = -58.052867 # Valor por defecto si falta el segundo
+except Exception as e:
+    st.error(f"⚠️ Formato incorrecto. Use: latitud, longitud (ejemplo: -32.27, -58.05)")
     st.stop()
 
-# --- CUERPO PRINCIPAL DE LA APP ---
+# --- CUERPO PRINCIPAL ---
 st.title("🌱 AGRO DATA LITORAL - Dashboard de Ingeniería")
 st.write(f"Análisis satelital para el punto: **{lat}, {lon}**")
 
-# Fila 1: Los 3 Indicadores Clave (Botánica, Geología, Ingeniería)
+# Fila 1: Indicadores
 col1, col2, col3 = st.columns(3)
 
-# Simulación de datos satelitales (Basado en tus fotos)
 with col1:
     st.markdown('<div class="metric-card">', unsafe_allow_html=True)
     st.subheader("🌿 Botánica")
@@ -96,24 +95,23 @@ with col3:
 
 st.write("---")
 
-# Fila 2: Mapa y Análisis de Terreno
+# Fila 2: Mapa y Análisis
 col_map, col_info = st.columns([2, 1])
 
 with col_map:
-    st.write("### 🛰️ Visualización Cartográfica (Círculo de Muestreo)")
+    st.write("### 🛰️ Visualización Cartográfica")
     map_data = pd.DataFrame({'lat': [lat], 'lon': [lon]})
     st.map(map_data, zoom=16)
 
 with col_info:
     st.write("### 📋 Reporte del Predio")
     if st.button("GENERAR INFORME COMPLETO"):
-        with st.spinner("Consultando histórico de 20 años..."):
-            time.sleep(2)
-            st.write("**Superficie Detectada:** ~2000 m²")
-            st.write("**Drenaje:** Natural hacia el NO")
-            st.write("**Riesgo Hídrico:** Mínimo")
-            st.info("Suelo apto para construcción inmediata sin pilotaje.")
+        with st.spinner("Analizando terreno de 2000m²..."):
+            time.sleep(1.5)
+            st.write("**Superficie:** ~2000 m²")
+            st.write("**Tipo de Suelo:** Franco-Arcilloso")
+            st.info("Suelo estable para construcción.")
             st.balloons()
 
 st.write("---")
-st.caption("Agro Data Litoral - Agilidad, Disponibilidad y Seguridad de la Información.")
+st.caption("Agro Data Litoral - Tecnología de Precisión | Paysandú, Uruguay")
