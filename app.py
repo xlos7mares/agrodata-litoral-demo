@@ -2,139 +2,125 @@ import streamlit as st
 import pandas as pd
 import requests
 import re
-import io
-import google.generativeai as genai
+import math
 from fpdf import FPDF
-from PIL import Image
 from datetime import datetime
 
 # --- CONFIGURACIÓN DE PÁGINA ---
 st.set_page_config(page_title="Agro Data Litoral PRO", layout="wide", page_icon="🛰️")
 
-# --- CONEXIÓN IA (CON ESCUDO ANTI-ERROR) ---
+# --- CONEXIÓN IA (ESCUDO ANTI-ERROR) ---
+import google.generativeai as genai
 try:
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-    # Intentamos el modelo más estable
     modelo_ia = genai.GenerativeModel('gemini-pro')
     ia_activa = True
 except:
     ia_activa = False
 
-# --- LLAVE SATELITAL REAL (OPENWEATHER) ---
+# --- CONSTANTES SATELITALES ---
 OW_API_KEY = "6508c51f5beeace1ba98e80ea843e599"
 
-def obtener_datos_satelitales(lat, lon):
-    """Consulta satelital exacta para el Litoral"""
+def calcular_delta_t(t, h):
+    """Cálculo técnico para aplicaciones de agroquímicos"""
+    # Aproximación de bulbo húmedo para Delta T
+    tw = t * math.atan(0.151977 * (h + 8.313659)**0.5) + math.atan(t + h) - math.atan(h - 1.676331) + 0.00391838 * (h)**1.5 * math.atan(0.023101 * h) - 4.686035
+    return round(t - tw, 1)
+
+def obtener_datos_exactos(lat, lon):
     try:
         url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={OW_API_KEY}&units=metric&lang=es"
         r = requests.get(url).json()
-        temp_aire = r['main']['temp']
-        humedad = r['main']['humidity']
-        clima_desc = r['weather'][0]['description']
-        # Ajuste técnico de suelo (+1.2°C por inercia térmica)
-        return round(temp_aire + 1.2, 1), humedad, clima_desc
+        t = r['main']['temp']
+        h = r['main']['humidity']
+        v = r['wind']['speed'] * 3.6 # km/h
+        dt = calcular_delta_t(t, h)
+        return round(t, 1), h, round(v, 1), dt, r['weather'][0]['description']
     except:
-        return 22.0, 60, "Datos en espera"
+        return 20.0, 50, 10.0, 2.0, "S/D"
 
-# --- MOTOR DE AUDITORÍA LÓGICA (BASADO EN TUS MANUALES OIRSA) ---
-def auditoria_manual_oirsa(t, h, zona):
-    dictamen = []
-    if h > 75:
-        dictamen.append("⚠️ RIESGO FITOSANITARIO: Humedad alta. Riesgo de hongos según Manual OIRSA.")
-    if t > 30:
-        dictamen.append("🌡️ ALERTA TÉRMICA: Estrés hídrico detectado. Evitar aplicaciones agrícolas.")
-    dictamen.append(f"🌱 GESTIÓN AMBIENTAL: Recomendado manejo de franjas de amortiguamiento en {zona}.")
-    dictamen.append("✅ CUMPLIMIENTO: Condiciones aptas para registro en cuaderno de campo.")
-    return "\n".join(dictamen)
-
-# --- MENÚ LATERAL (TUS 4 OPCIONES RECUPERADAS) ---
-st.sidebar.title("Agro Data Litoral 🛰️")
-menu = st.sidebar.radio("Navegación:", [
-    "1. Análisis de Predio y PDF", 
-    "2. Asistente Agronómico (Chat)", 
-    "3. Scouting IA (Plagas/Suelo)", 
-    "4. Viabilidad Financiera (VRZ)"
-])
-
-# --- 1. ANÁLISIS DE PREDIO Y PDF ---
-if menu == "1. Análisis de Predio y PDF":
-    st.title("🛰️ Auditoría Satelital e Inocuidad")
+# --- MOTOR DE AUDITORÍA DE INGENIERÍA (BASADO EN TUS MANUALES) ---
+def dictamen_ingenieria(t, h, v, dt, zona):
+    reporte = []
     
-    col1, col2 = st.columns(2)
-    with col1:
-        gps_in = st.text_input("📍 Ubicación (GPS):", "-32.2997, -58.0583")
-        productor = st.text_input("👤 Productor:", "Leo - Paysandú")
-    with col2:
-        padron = st.text_input("N° Padrón:", "1024")
-        depto = st.selectbox("🗺️ Departamento:", ["Paysandú", "Salto", "Río Negro", "Soriano"])
+    # 1. Análisis de Aplicación (Deriva y Evaporación)
+    if 2 <= dt <= 8:
+        reporte.append("✅ VENTANA DE APLICACIÓN: Delta T óptimo (2-8). Condiciones ideales para pulverización.")
+    elif dt > 10:
+        reporte.append("❌ ALERTA DE EVAPORACIÓN: Delta T elevado (>10). Riesgo crítico de pérdida de producto por evaporación.")
+    else:
+        reporte.append("⚠️ RIESGO DE INVERSIÓN: Delta T bajo (<2). Posible deriva por inversión térmica.")
 
-    # Procesar GPS
+    # 2. Fitopatología (Basado en OIRSA)
+    if h > 80 and t > 18:
+        reporte.append("🍄 ALERTA FÚNGICA: Condiciones de alta higrometría y temperatura media favorecen la germinación de esporas (Phakopsora pachyrhizi, etc.).")
+    
+    # 3. Gestión Ambiental (Manual de Impacto Ambiental Rural)
+    reporte.append(f"🚜 SUELOS {zona.upper()}: Según manual de evaluación, se recomienda monitoreo de erosión hídrica post-evento pluvial.")
+    
+    # 4. Inocuidad (Buenas Prácticas Agrícolas)
+    reporte.append("📋 INOCUIDAD: Verificar integridad de zonas de carga de agua y señalización de depósitos de fitosanitarios.")
+
+    return "\n".join(reporte)
+
+# --- INTERFAZ ---
+st.sidebar.title("Agro Data Litoral 🛰️")
+menu = st.sidebar.radio("Navegación:", ["1. Auditoría de Predio y PDF", "2. Asistente IA", "3. Scouting Visual", "4. Viabilidad VRZ"])
+
+if menu == "1. Auditoría de Predio y PDF":
+    st.title("🛰️ Auditoría de Ingeniería Agroambiental")
+    
+    with st.container():
+        c1, c2, c3 = st.columns(3)
+        with c1: gps_in = st.text_input("📍 Ubicación:", "-32.2997, -58.0583")
+        with c2: productor = st.text_input("👤 Productor:", "Leo")
+        with c3: depto = st.selectbox("🗺️ Depto:", ["Paysandú", "Salto", "Río Negro", "Soriano"])
+
     nums = re.findall(r'[-+]?\d*\.\d+|[-+]?\d+', gps_in)
     lat, lon = (float(nums[0]), float(nums[1])) if len(nums) >= 2 else (-32.2997, -58.0583)
 
-    # SEÑORES DE TEMPERATURA Y HUMEDAD (REALES)
-    t_suelo, hum_r, desc_clima = obtener_datos_satelitales(lat, lon)
+    t, h, v, dt, desc = obtener_datos_exactos(lat, lon)
     
-    m1, m2, m3 = st.columns(3)
-    m1.metric("🌡️ TEMP. SUELO REAL", f"{t_suelo} °C")
-    m2.metric("💧 HUMEDAD REAL", f"{hum_r} %")
-    m3.metric("☁️ CLIMA LOCAL", desc_clima.capitalize())
+    st.markdown("---")
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric("🌡️ TEMP. AIRE", f"{t} °C")
+    m2.metric("💧 HUMEDAD", f"{h} %")
+    m3.metric("🌬️ VIENTO", f"{v} km/h")
+    m4.metric("📊 DELTA T", f"{dt}", delta_color="inverse")
 
-    st.map(pd.DataFrame({'lat': [lat], 'lon': [lon]}))
-    
-    if st.button("🚀 GENERAR AUDITORÍA PROFESIONAL"):
-        with st.spinner('Analizando datos...'):
-            # El escudo: Si falla la IA, usa los manuales que subiste
+    if st.button("🚀 EJECUTAR AUDITORÍA TÉCNICA"):
+        with st.spinner('Procesando lógica de ingeniería...'):
             try:
                 if ia_activa:
-                    p = f"Agrónomo: Auditoría para {depto}, suelo {t_suelo}C, humedad {hum_r}%. Basate en normas OIRSA."
-                    analisis = modelo_ia.generate_content(p).text
+                    prompt = f"Como Ing. Agrónomo, dicta auditoría para {depto}. Datos: T={t}C, H={h}%, Viento={v}km/h, DeltaT={dt}. Cita normas OIRSA e inocuidad."
+                    dictamen = modelo_ia.generate_content(prompt).text
                 else:
-                    analisis = auditoria_manual_oirsa(t_suelo, hum_r, depto)
+                    dictamen = dictamen_ingenieria(t, h, v, dt, depto)
             except:
-                analisis = auditoria_manual_oirsa(t_suelo, hum_r, depto)
+                dictamen = dictamen_ingenieria(t, h, v, dt, depto)
             
-            st.success("Dictamen Técnico Finalizado")
-            st.info(analisis)
+            st.success("Dictamen de Ingeniería Generado")
+            st.info(dictamen)
             
-            # Generar PDF
+            # PDF PROFESIONAL
             pdf = FPDF()
             pdf.add_page()
             pdf.set_font("Arial", 'B', 16)
-            pdf.cell(0, 10, "REPORTE DE AUDITORÍA AGRO DATA LITORAL", 0, 1, 'C')
-            pdf.set_font("Arial", size=10)
-            pdf.cell(0, 10, f"Fecha: {datetime.now().strftime('%d/%m/%Y')} | Productor: {productor}", 0, 1)
+            pdf.cell(0, 10, "AUDITORÍA TÉCNICA AGRO DATA LITORAL", 0, 1, 'C')
+            pdf.set_font("Arial", size=9)
+            pdf.cell(0, 10, f"Generado: {datetime.now().strftime('%d/%m/%Y %H:%M')} | Productor: {productor} | Depto: {depto}", 0, 1)
             pdf.ln(5)
-            pdf.multi_cell(0, 10, analisis.encode('latin-1', 'ignore').decode('latin-1'))
-            st.download_button("📥 DESCARGAR PDF", pdf.output(dest='S').encode('latin-1'), f"Reporte_{padron}.pdf")
+            pdf.set_font("Arial", 'B', 11)
+            pdf.cell(0, 10, "1. DATOS METEOROLÓGICOS DE PRECISIÓN:", 0, 1)
+            pdf.set_font("Arial", size=10)
+            pdf.cell(0, 8, f"- Temperatura: {t} C | Humedad: {h}% | Viento: {v} km/h | Delta T: {dt}", 0, 1)
+            pdf.ln(5)
+            pdf.set_font("Arial", 'B', 11)
+            pdf.cell(0, 10, "2. DICTAMEN TÉCNICO Y GESTIÓN DE RIESGOS:", 0, 1)
+            pdf.set_font("Arial", size=10)
+            pdf.multi_cell(0, 8, dictamen.encode('latin-1', 'ignore').decode('latin-1'))
+            
+            st.download_button("📥 DESCARGAR AUDITORÍA PDF", pdf.output(dest='S').encode('latin-1'), f"Auditoria_Tecnica_{depto}.pdf")
 
-# --- 2. ASISTENTE AGRONÓMICO (CHAT) ---
-elif menu == "2. Asistente Agronómico (Chat)":
-    st.title("🤖 Asistente Técnico (Chat)")
-    pregunta = st.chat_input("¿Qué duda técnica tienes hoy?")
-    if pregunta:
-        with st.chat_message("user"): st.write(pregunta)
-        with st.chat_message("assistant"):
-            if ia_activa:
-                try: st.write(modelo_ia.generate_content(pregunta).text)
-                except: st.write("Error temporal en la IA. Inténtelo de nuevo.")
-            else: st.write("IA en mantenimiento. Use el módulo 1 para auditorías.")
-
-# --- 3. SCOUTING IA (PLAGA/SUELO) ---
-elif menu == "3. Scouting IA (Plagas/Suelo)":
-    st.title("🔍 Reconocimiento de Plagas por Foto")
-    foto = st.file_uploader("Sube una foto del cultivo o suelo", type=['jpg', 'png'])
-    if foto:
-        img = Image.open(foto)
-        st.image(img)
-        if st.button("Analizar Imagen"):
-            if ia_activa:
-                try: st.write(modelo_ia.generate_content(["¿Qué plaga o deficiencia ves en esta imagen?", img]).text)
-                except: st.write("La IA visual no está disponible en este momento.")
-            else: st.write("Módulo visual requiere conexión con Google Cloud.")
-
-# --- 4. VIABILIDAD FINANCIERA (VRZ) ---
-elif menu == "4. Viabilidad Financiera (VRZ)":
-    st.title("💰 Análisis VRZ (Valor Real de Zona)")
-    st.write("Cálculos de retorno de inversión basados en el Manual de Evaluación Ambiental Rural.")
-    st.info("Módulo de cálculo financiero para el Litoral en desarrollo.")
+else:
+    st.info("Módulo en desarrollo para ingeniería.")
