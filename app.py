@@ -19,6 +19,34 @@ except Exception as e:
     ia_activa = False
     st.sidebar.error("⚠️ Falta configurar GEMINI_API_KEY en los secrets.")
 
+# --- TRADUCTOR INTELIGENTE DE COORDENADAS ---
+def convertir_coordenadas(texto_coords):
+    texto = texto_coords.upper()
+    # Si tiene el símbolo de grados (°) o letras S/W, es formato Grados/Minutos/Segundos
+    if '°' in texto or 'S' in texto or 'W' in texto or "'" in texto:
+        # Extraemos solo los números
+        numeros = re.findall(r'[\d\.]+', texto)
+        # Extraemos las letras de dirección (N, S, E, W)
+        letras = re.findall(r'[NSWE]', texto)
+        
+        if len(numeros) >= 6 and len(letras) >= 2:
+            # Fórmula: Grados + (Minutos/60) + (Segundos/3600)
+            lat = float(numeros[0]) + float(numeros[1])/60 + float(numeros[2])/3600
+            lon = float(numeros[3]) + float(numeros[4])/60 + float(numeros[5])/3600
+            
+            # Si es Sur (S) u Oeste (W), el valor decimal debe ser negativo
+            if letras[0] == 'S': lat = -lat
+            if letras[1] == 'W': lon = -lon
+            return lat, lon
+            
+    # Si no tiene grados ni letras, asumimos que ya es decimal (ej: -32.3214, -58.0756)
+    numeros_decimales = re.findall(r'[-+]?\d*\.\d+|[-+]?\d+', texto)
+    if len(numeros_decimales) >= 2:
+        return float(numeros_decimales[0]), float(numeros_decimales[1])
+        
+    # Si no entiende el formato, devuelve error
+    return None, None
+
 # --- CLASE PARA EL INFORME PDF ---
 class AgroInformeFinal(FPDF):
     def __init__(self, cliente, lat, lon, padron, depto):
@@ -59,8 +87,8 @@ class AgroInformeFinal(FPDF):
         self.set_font('Helvetica', '', 11)
         self.cell(95, 10, f" PADRÓN: {self.padron}", 1, 0)
         self.cell(95, 10, f" DEPTO: {self.depto}", 1, 1)
-        self.cell(95, 10, f" LATITUD: {self.lat}", 1, 0)
-        self.cell(95, 10, f" LONGITUD: {self.lon}", 1, 1)
+        self.cell(95, 10, f" LATITUD: {self.lat:.4f}", 1, 0)
+        self.cell(95, 10, f" LONGITUD: {self.lon:.4f}", 1, 1)
 
 # --- MENÚ LATERAL ---
 st.sidebar.title("🛰️ Agro Data Litoral")
@@ -80,45 +108,47 @@ if menu == "1. Análisis de Predio y PDF":
     
     col_input1, col_input2 = st.columns(2)
     with col_input1:
-        url_input = st.text_input("Enlace Google Maps / Coordenadas:", "-32.3214, -58.0756")
+        url_input = st.text_input("Enlace Google Maps / Coordenadas:", "32°17'59.0\"S 58°03'29.0\"W")
         cliente = st.text_input("Cliente / Empresa:", "Productor Litoral")
     with col_input2:
         padron = st.text_input("Padrón:", "1234")
         depto = st.selectbox("Departamento:", ["Paysandú", "Río Negro", "Soriano", "Salto", "Artigas"])
 
     try:
-        coords = re.findall(r'[-+]?\d*\.\d+|\d+', url_input)
-        lat, lon = float(coords[0]), float(coords[1])
+        # Usamos nuestra nueva función inteligente para traducir las coordenadas
+        lat, lon = convertir_coordenadas(url_input)
         
-        c1, c2, c3, c4 = st.columns(4)
-        c1.metric("🌡️ TEMP. SUELO", "22.5°C")
-        c2.metric("🌿 VIGOR (NDVI)", "0.82")
-        c3.metric("🪨 SUELO PREDOMINANTE", "Franco")
-        c4.metric("💧 HUMEDAD", "65%")
+        if lat is not None and lon is not None:
+            c1, c2, c3, c4 = st.columns(4)
+            c1.metric("🌡️ TEMP. SUELO", "22.5°C")
+            c2.metric("🌿 VIGOR (NDVI)", "0.82")
+            c3.metric("🪨 SUELO PREDOMINANTE", "Franco")
+            c4.metric("💧 HUMEDAD", "65%")
 
-        st.map(pd.DataFrame({'lat': [lat], 'lon': [lon]}), zoom=13)
+            st.map(pd.DataFrame({'lat': [lat], 'lon': [lon]}), zoom=13)
 
-        if st.button("🚀 GENERAR AUDITORÍA PROFESIONAL CON IA", use_container_width=True):
-            if ia_activa:
-                with st.spinner('Procesando datos del terreno con Gemini Pro...'):
-                    # Prompt para que Gemini genere el texto del reporte
-                    prompt_pdf = f"Actúa como un agrónomo de Agro Data Litoral. Redacta un informe técnico de 3 párrafos sobre el potencial agrícola, tipo de suelo esperado y riesgos climáticos para un campo en {depto}, Uruguay (Padrón {padron}). Usa lenguaje técnico, formal y no uses asteriscos de formato."
-                    respuesta_ia = modelo_ia.generate_content(prompt_pdf).text
-                    
-                    pdf = AgroInformeFinal(cliente, lat, lon, padron, depto)
-                    pdf.portada()
-                    pdf.add_page()
-                    pdf.set_font('Helvetica', 'B', 14)
-                    pdf.cell(0, 10, "EVALUACIÓN AGRONÓMICA ESTRUCTURAL", 0, 1)
-                    pdf.set_font('Helvetica', '', 11)
-                    texto_limpio = respuesta_ia.replace('**', '').replace('*', '')
-                    pdf.multi_cell(0, 6, texto_limpio)
-                    
-                    st.session_state['pdf_final'] = pdf.output(dest='S').encode('latin-1', errors='replace')
-                    st.success("✅ Auditoría Generada Exitosamente")
-                    st.download_button("📥 DESCARGAR INFORME EN PDF", st.session_state['pdf_final'], f"Auditoria_{padron}_{depto}.pdf")
-            else:
-                st.error("La IA no está conectada. Revisa tu API Key.")
+            if st.button("🚀 GENERAR AUDITORÍA PROFESIONAL CON IA", use_container_width=True):
+                if ia_activa:
+                    with st.spinner('Procesando datos del terreno con Gemini Pro...'):
+                        prompt_pdf = f"Actúa como un ingeniero agrónomo de Agro Data Litoral. Redacta un informe técnico de 3 párrafos sobre el potencial agrícola, tipo de suelo esperado y riesgos climáticos para un campo en {depto}, Uruguay (Padrón {padron}). Usa lenguaje técnico, formal y no uses asteriscos de formato."
+                        respuesta_ia = modelo_ia.generate_content(prompt_pdf).text
+                        
+                        pdf = AgroInformeFinal(cliente, lat, lon, padron, depto)
+                        pdf.portada()
+                        pdf.add_page()
+                        pdf.set_font('Helvetica', 'B', 14)
+                        pdf.cell(0, 10, "EVALUACIÓN AGRONÓMICA ESTRUCTURAL", 0, 1)
+                        pdf.set_font('Helvetica', '', 11)
+                        texto_limpio = respuesta_ia.replace('**', '').replace('*', '')
+                        pdf.multi_cell(0, 6, texto_limpio)
+                        
+                        st.session_state['pdf_final'] = pdf.output(dest='S').encode('latin-1', errors='replace')
+                        st.success("✅ Auditoría Generada Exitosamente")
+                        st.download_button("📥 DESCARGAR INFORME EN PDF", st.session_state['pdf_final'], f"Auditoria_{padron}_{depto}.pdf")
+                else:
+                    st.error("La IA no está conectada. Revisa tu API Key.")
+        else:
+            st.warning("⚠️ Formato de coordenada no reconocido. Intenta usar números (ej: -32.32, -58.07) o grados (ej: 32°17'59\"S 58°03'29\"W).")
 
     except Exception as e:
         st.info("Ingresa coordenadas válidas para ver el mapa.")
@@ -144,7 +174,6 @@ elif menu == "2. Asistente Agronómico (Chat)":
 
         if ia_activa:
             with st.chat_message("assistant"):
-                # Se envía el historial completo para que tenga memoria
                 historial = "\n".join([f"{m['role']}: {m['content']}" for m in st.session_state.mensajes_chat[-5:]])
                 instruccion = "Eres el asistente de la aplicación Agro Data Litoral en Uruguay. Responde como un ingeniero agrónomo experto, directo y preciso. Prioriza la rentabilidad y el cuidado del suelo."
                 prompt_completo = f"{instruccion}\nHistorial reciente:\n{historial}\n\nResponde a lo último."
