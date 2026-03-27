@@ -35,23 +35,26 @@ def obtener_telemetria(lat, lon):
         return t, h, round(v, 1), dt, r['weather'][0]['description'].capitalize()
     except: return None
 
-# --- REPORTE TÉCNICO EXTENSO (MANTENIDO) ---
+# --- REPORTE TÉCNICO EXTENSO (RESTAURADO 100%) ---
 class PDF_Cientifico(FPDF):
     def header(self):
         try: self.image('logo_agro.png', 10, 8, 30)
         except: pass
-        self.set_font('Arial', 'B', 9)
-        self.cell(0, 5, f"{AUTOR}", 0, 1, 'R')
-        self.set_font('Arial', 'I', 7)
+        self.set_font('Arial', 'B', 10)
+        self.set_text_color(40, 40, 40)
+        self.cell(0, 5, f"AGRO DATA LITORAL - {AUTOR}", 0, 1, 'R')
+        self.set_font('Arial', '', 7)
         self.cell(0, 5, f"{PERFIL}", 0, 1, 'R')
         self.ln(15)
-        self.line(10, 30, 200, 30)
+        self.line(10, 32, 200, 32)
+
     def footer(self):
         self.set_y(-15)
         self.set_font('Arial', 'I', 8)
+        self.set_text_color(100, 100, 100)
         self.cell(0, 10, f'Página {self.page_no()} | Auditoría Técnica Real 100% Validada | {AUTOR}', 0, 0, 'C')
 
-# --- MENÚ LATERAL (TUS 4 PILARES) ---
+# --- MENÚ LATERAL ---
 st.sidebar.title("Agro Data Litoral 🛰️")
 menu = st.sidebar.radio("Navegación:", [
     "1. Análisis de Predio y PDF", 
@@ -60,12 +63,12 @@ menu = st.sidebar.radio("Navegación:", [
     "4. Viabilidad Financiera (VRZ)"
 ])
 
-# --- MÓDULO 1: ANÁLISIS DE PREDIO (MANTENIDO INTACTO) ---
+# --- MÓDULO 1: ANÁLISIS DE PREDIO ---
 if menu == "1. Análisis de Predio y PDF":
     st.title("🛰️ Estación de Monitoreo y Auditoría")
     c1, c2 = st.columns(2)
     with c1: gps_in = st.text_input("📍 Coordenadas:", "-32.2997, -58.0583")
-    with c2: padron = st.text_input("📄 N° Padrón Catastral (DNC):", "")
+    with c2: padron_input = st.text_input("📄 N° Padrón Catastral (DNC):", "")
 
     coords = re.findall(r'[-+]?\d*\.\d+|[-+]?\d+', gps_in)
     if len(coords) >= 2:
@@ -83,65 +86,86 @@ if menu == "1. Análisis de Predio y PDF":
             if st.button("🚀 GENERAR REPORTE TÉCNICO COMPLETO"):
                 pdf = PDF_Cientifico()
                 pdf.set_auto_page_break(auto=True, margin=15)
-                # Hoja 1: Agrometeorología
+                
+                # PÁGINA 1: CARACTERIZACIÓN AGROMETEOROLÓGICA
                 pdf.add_page()
-                pdf.set_font("Arial", 'B', 14); pdf.cell(0, 10, "I. CARACTERIZACIÓN AGROMETEOROLÓGICA", 0, 1)
-                pdf.set_font("Arial", '', 10); pdf.multi_cell(0, 7, f"Telemetría en tiempo real: {t}C, {h}% humedad. Delta T calculado: {dt}. Datos 100% reales para Paysandú.")
-                # Hoja 2: Geología
-                pdf.add_page()
-                pdf.set_font("Arial", 'B', 14); pdf.cell(0, 10, "II. UNIDAD LITOESTRATIGRÁFICA (DINAMIGE)", 0, 1)
-                pdf.set_font("Arial", '', 10); pdf.multi_cell(0, 7, "Formación Arapey. Basaltos toleíticos mesozoicos. Estructura masiva con disyunción columnar.")
-                # Hoja 3: Edafología
-                pdf.add_page()
-                pdf.set_font("Arial", 'B', 14); pdf.cell(0, 10, "III. EDAFOLOGÍA Y GRUPOS CONEAT", 0, 1)
-                pdf.set_font("Arial", '', 10); pdf.multi_cell(0, 7, f"Suelos Unidad Itapebí (Grupo 12). Brunosoles Éutricos. Padrón: {padron}. Análisis de arcillas 2:1.")
-                st.download_button("📥 DESCARGAR PDF", pdf.output(dest='S').encode('latin-1'), f"Auditoria_{padron}.pdf")
+                pdf.set_font("Arial", 'B', 14)
+                pdf.cell(0, 10, "I. CARACTERIZACIÓN AGROMETEOROLÓGICA", 0, 1)
+                pdf.ln(5)
+                pdf.set_font("Arial", '', 11)
+                texto_p1 = (
+                    f"Los datos obtenidos vía satélite para la ubicación {lat}, {lon} indican una temperatura "
+                    f"de {t}C con una humedad relativa del {h}%.\n\n"
+                    f"CÁLCULO DEL DELTA T (Psicrometría): El valor registrado de {dt} es un indicador crítico "
+                    f"para la eficiencia de aplicación de fitosanitarios. Este diferencial térmico determina "
+                    f"la tasa de supervivencia de la gota antes de la evaporación, siendo vital para la "
+                    f"planificación de tareas en el departamento de Paysandú."
+                )
+                pdf.multi_cell(0, 7, texto_p1.encode('latin-1', 'ignore').decode('latin-1'))
 
-# --- MÓDULO 2: MINI IA GEMINI ESPECIALIZADA (NUEVO DISEÑO) ---
+                # PÁGINA 2: UNIDAD LITOESTRATIGRÁFICA
+                pdf.add_page()
+                pdf.set_font("Arial", 'B', 14)
+                pdf.cell(0, 10, "II. UNIDAD LITOESTRATIGRÁFICA (DINAMIGE)", 0, 1)
+                pdf.ln(5)
+                pdf.set_font("Arial", '', 11)
+                texto_p2 = (
+                    "El predio se asienta sobre la Formación Arapey, perteneciente al Grupo Paysandú. "
+                    "Esta unidad se caracteriza por potentes derrames de basaltos toleíticos del Cretácico Inferior. "
+                    "La estructura geológica es de naturaleza masiva con presencia de disyunción columnar en ciertos "
+                    "perfiles, lo que influye directamente en el almacenamiento de aguas subterráneas y el drenaje "
+                    "natural del terreno basalto."
+                )
+                pdf.multi_cell(0, 7, texto_p2.encode('latin-1', 'ignore').decode('latin-1'))
+
+                # PÁGINA 3: EDAFOLOGÍA Y GLOSARIO
+                pdf.add_page()
+                pdf.set_font("Arial", 'B', 14)
+                pdf.cell(0, 10, "III. EDAFOLOGÍA Y CAPACIDAD DE USO (CONEAT)", 0, 1)
+                pdf.ln(5)
+                pdf.set_font("Arial", '', 11)
+                txt_padron = padron_input if padron_input else "Sin especificar"
+                texto_p3 = (
+                    f"Padrón identificado: {txt_padron}\n\n"
+                    "Los suelos dominantes corresponden a la Unidad Itapebí (Grupos 12). Se definen técnicamente "
+                    "como Brunosoles Éutricos superficiales y moderadamente profundos. Poseen texturas franco-arcillosas "
+                    "y una fertilidad química natural alta, aunque limitada físicamente por la profundidad rocosa.\n\n"
+                    "GLOSARIO TÉCNICO:\n"
+                    "- Delta T: Diferencia entre bulbo seco y húmedo (tasa de evaporación).\n"
+                    "- Brunosoles: Suelos con horizonte A oscuro, ricos en bases y arcillas 2:1.\n"
+                    "- Litoestratigrafía: Clasificación de cuerpos rocosos según su origen y edad."
+                )
+                pdf.multi_cell(0, 7, texto_p3.encode('latin-1', 'ignore').decode('latin-1'))
+                
+                st.download_button("📥 DESCARGAR PDF COMPLETO", pdf.output(dest='S').encode('latin-1'), f"Reporte_{txt_padron}.pdf")
+
+# --- MÓDULO 2: MINI IA GEMINI ---
 elif menu == "2. Asistente Agronómico (Mini IA Gemini)":
     st.title("🤖 Mini IA Gemini Especializada")
-    st.markdown(f"**Especialidad:** Agronomía, Botánica, Física de Suelos, Geología y Biología Molecular.")
-    st.caption(f"Consultor Científico desarrollado por {AUTOR}")
-    
     st.markdown("### 💡 Sugerencias de Consultas Técnicas")
+    c_ex1, c_ex2 = st.columns(2)
+    with c_ex1:
+        st.info("**Rotación de Cultivos**\n\n¿Cómo diseñar una rotación óptima para suelos basálticos?")
+        st.info("**Entomología**\n\n¿Qué insectos depredadores actúan hoy en el litoral?")
+    with c_ex2:
+        st.info("**Química de Suelos**\n\nAnaliza la absorción de fósforo en Brunosoles.")
+        st.info("**Ingeniería de Aplicación**\n\n¿Parámetros críticos de Delta T?")
     
-    # Diseño de Tarjetas de Ejemplo
-    col_ex1, col_ex2 = st.columns(2)
-    with col_ex1:
-        st.info("**Rotación de Cultivos**\n\n¿Cómo diseñar una rotación óptima para suelos basálticos en Paysandú considerando vertisoles?")
-        st.info("**Entomología**\n\n¿Qué insectos benéficos actúan hoy como depredadores naturales en el litoral uruguayo?")
-    with col_ex2:
-        st.info("**Química de Suelos**\n\nAnaliza la dinámica de absorción de fósforo en Brunosoles Éutricos con pH 6.8.")
-        st.info("**Ingeniería de Aplicación**\n\n¿Cuáles son los parámetros críticos de Delta T para pulverizar fungicidas sistémicos?")
-
     st.divider()
-
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
-
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]): st.markdown(message["content"])
-
-    if prompt := st.chat_input("Escriba su consulta técnica aquí..."):
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"): st.markdown(prompt)
-
+    if "messages" not in st.session_state: st.session_state.messages = []
+    for msg in st.session_state.messages:
+        with st.chat_message(msg["role"]): st.markdown(msg["content"])
+    if p := st.chat_input("Consulta técnica..."):
+        st.session_state.messages.append({"role": "user", "content": p})
+        with st.chat_message("user"): st.markdown(p)
         with st.chat_message("assistant", avatar="🤖"):
             if ia_lista:
-                # Instrucción de Sistema para que sea un EXPERTO REAL
-                contexto = (
-                    f"Eres una IA Gemini especializada en Agronomía. Tu creador es {AUTOR}. "
-                    "Responde como un Ingeniero Agrónomo senior. Usa lenguaje científico (CIC, montmorillonita, fenología). "
-                    "No inventes datos de campo si no te los dan, pero explica la teoría científica a la perfección. "
-                    f"Consulta: {prompt}"
-                )
-                try:
-                    res = modelo_ia.generate_content(contexto).text
-                    st.markdown(res)
-                    st.session_state.messages.append({"role": "assistant", "content": res})
-                except: st.error("Error de conexión con el motor Gemini.")
-            else: st.warning("IA no configurada en Secrets.")
+                ctx = f"Eres un Ing. Agrónomo experto. Creador: {AUTOR}. Responde con rigor científico a: {p}"
+                res = modelo_ia.generate_content(ctx).text
+                st.markdown(res)
+                st.session_state.messages.append({"role": "assistant", "content": res})
+            else: st.warning("IA no configurada.")
 
-# --- MÓDULOS 3 Y 4 (MANTENIDOS) ---
+# --- OTROS MÓDULOS ---
 elif menu == "3. Scouting IA (Plagas/Suelo)": st.title("🔍 Scouting Visual")
 elif menu == "4. Viabilidad Financiera (VRZ)": st.title("💰 Viabilidad VRZ")
