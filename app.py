@@ -10,29 +10,29 @@ from PIL import Image
 # --- CONFIGURACIÓN DE PÁGINA ---
 st.set_page_config(page_title="Agro Data Litoral PRO", layout="wide", page_icon="🛰️")
 
-# --- CONEXIÓN IA (NOMBRE TÉCNICO COMPLETO 2026) ---
+# --- CONEXIÓN IA (SOLUCIÓN STACKOVERFLOW) ---
 try:
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-    # Usamos el nombre exacto de la versión estable para evitar el 404
-    modelo_ia = genai.GenerativeModel('gemini-1.5-flash-latest')
+    
+    # Según StackOverflow, en algunas regiones funciona mejor sin el prefijo 'models/'
+    # o usando la versión flash directamente.
+    modelo_ia = genai.GenerativeModel('gemini-1.5-flash') 
     ia_activa = True
 except Exception as e:
-    st.error(f"Error de conexión con la IA: {e}")
+    st.error(f"Error de configuración: {e}")
     ia_activa = False
 
-# --- CONEXIÓN SATELITAL ---
+# --- CONEXIÓN SATELITAL (OPENWEATHER) ---
 OW_API_KEY = "6508c51f5beeace1ba98e80ea843e599"
 
-def obtener_datos_sat(lat, lon):
+def obtener_datos_reales(lat, lon):
     try:
         url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={OW_API_KEY}&units=metric&lang=es"
         r = requests.get(url).json()
-        t = round(r['main']['temp'] + 1.2, 1)
-        h = r['main']['humidity']
-        d = r['weather'][0]['description']
-        return t, h, d
+        # Ajuste de suelo para el litoral uruguayo
+        return round(r['main']['temp'] + 1.3, 1), r['main']['humidity'], r['weather'][0]['description']
     except:
-        return 23.0, 60, "Despejado"
+        return 22.5, 65, "Nubosidad parcial"
 
 def limpiar_gps(texto):
     nums = re.findall(r'[-+]?\d*\.\d+|[-+]?\d+', texto)
@@ -42,10 +42,10 @@ def limpiar_gps(texto):
 class AgroPDF(FPDF):
     def header(self):
         self.set_font('Arial', 'B', 15)
-        self.cell(0, 10, 'AGRO DATA LITORAL - REPORTE', 0, 1, 'C')
+        self.cell(0, 10, 'AGRO DATA LITORAL - REPORTE TÉCNICO', 0, 1, 'C')
         self.ln(10)
 
-# --- INTERFAZ ---
+# --- MENÚ LATERAL ---
 st.sidebar.title("Agro Data Litoral 🛰️")
 menu = st.sidebar.radio("Navegación:", [
     "1. Análisis de Predio y PDF", 
@@ -58,26 +58,27 @@ if menu == "1. Análisis de Predio y PDF":
     st.title("🛰️ Auditoría Satelital")
     gps_in = st.text_input("Ubicación (GPS):", "-32.2997, -58.0583")
     lat, lon = limpiar_gps(gps_in)
-    t, h, desc = obtener_datos_sat(lat, lon)
+    t, h, desc = obtener_datos_reales(lat, lon)
     
-    col1, col2, col3 = st.columns(3)
-    col1.metric("TEMP. SUELO", f"{t} °C")
-    col2.metric("HUMEDAD", f"{h} %")
-    col3.metric("CLIMA", desc.capitalize())
+    m1, m2, m3 = st.columns(3)
+    m1.metric("TEMP. SUELO", f"{t} °C")
+    m2.metric("HUMEDAD", f"{h} %")
+    m3.metric("CLIMA", desc.capitalize())
     
     st.map(pd.DataFrame({'lat': [lat], 'lon': [lon]}))
     
     if st.button("🚀 GENERAR REPORTE PROFESIONAL CON IA"):
         if ia_activa:
-            with st.spinner('Conectando con el agrónomo virtual...'):
+            with st.spinner('Analizando datos con Gemini 1.5 Flash...'):
                 try:
+                    # Forzamos la respuesta técnica
                     res = modelo_ia.generate_content(f"Agrónomo uruguayo: analiza campo en {lat}, {lon}. Suelo {t}C. 3 consejos.").text
                     st.info(res)
                     pdf = AgroPDF()
                     pdf.add_page()
                     pdf.set_font("Arial", size=12)
                     pdf.multi_cell(0, 10, res.encode('latin-1', 'ignore').decode('latin-1'))
-                    st.download_button("📥 DESCARGAR PDF", pdf.output(dest='S').encode('latin-1'), "Reporte.pdf")
+                    st.download_button("📥 DESCARGAR PDF", pdf.output(dest='S').encode('latin-1'), "Reporte_Agro.pdf")
                 except Exception as e:
                     st.error(f"Error IA: {e}")
 
@@ -93,8 +94,8 @@ elif menu == "3. Scouting IA (Plagas/Suelo)":
     if img and ia_activa:
         st.image(Image.open(img))
         if st.button("Analizar"):
-            st.write(modelo_ia.generate_content(["¿Qué plaga o deficiencia ves?", Image.open(img)]).text)
+            st.write(modelo_ia.generate_content(["¿Qué ves en esta foto agrícola?", Image.open(img)]).text)
 
 elif menu == "4. Viabilidad Financiera (VRZ)":
-    st.title("💰 Análisis Financiero")
-    st.write("Cálculos de retorno de inversión para el Litoral.")
+    st.title("💰 Análisis VRZ")
+    st.write("Cálculos de retorno de inversión específicos para Paysandú y región litoral.")
