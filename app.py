@@ -22,29 +22,20 @@ except Exception as e:
 # --- TRADUCTOR INTELIGENTE DE COORDENADAS ---
 def convertir_coordenadas(texto_coords):
     texto = texto_coords.upper()
-    # Si tiene el símbolo de grados (°) o letras S/W, es formato Grados/Minutos/Segundos
     if '°' in texto or 'S' in texto or 'W' in texto or "'" in texto:
-        # Extraemos solo los números
         numeros = re.findall(r'[\d\.]+', texto)
-        # Extraemos las letras de dirección (N, S, E, W)
         letras = re.findall(r'[NSWE]', texto)
-        
         if len(numeros) >= 6 and len(letras) >= 2:
-            # Fórmula: Grados + (Minutos/60) + (Segundos/3600)
             lat = float(numeros[0]) + float(numeros[1])/60 + float(numeros[2])/3600
             lon = float(numeros[3]) + float(numeros[4])/60 + float(numeros[5])/3600
-            
-            # Si es Sur (S) u Oeste (W), el valor decimal debe ser negativo
             if letras[0] == 'S': lat = -lat
             if letras[1] == 'W': lon = -lon
             return lat, lon
             
-    # Si no tiene grados ni letras, asumimos que ya es decimal (ej: -32.3214, -58.0756)
     numeros_decimales = re.findall(r'[-+]?\d*\.\d+|[-+]?\d+', texto)
     if len(numeros_decimales) >= 2:
         return float(numeros_decimales[0]), float(numeros_decimales[1])
         
-    # Si no entiende el formato, devuelve error
     return None, None
 
 # --- CLASE PARA EL INFORME PDF ---
@@ -115,7 +106,6 @@ if menu == "1. Análisis de Predio y PDF":
         depto = st.selectbox("Departamento:", ["Paysandú", "Río Negro", "Soriano", "Salto", "Artigas"])
 
     try:
-        # Usamos nuestra nueva función inteligente para traducir las coordenadas
         lat, lon = convertir_coordenadas(url_input)
         
         if lat is not None and lon is not None:
@@ -139,19 +129,31 @@ if menu == "1. Análisis de Predio y PDF":
                         pdf.set_font('Helvetica', 'B', 14)
                         pdf.cell(0, 10, "EVALUACIÓN AGRONÓMICA ESTRUCTURAL", 0, 1)
                         pdf.set_font('Helvetica', '', 11)
-                        texto_limpio = respuesta_ia.replace('**', '').replace('*', '')
+                        
+                        # --- FILTRO DE LIMPIEZA PARA FPDF ---
+                        texto_limpio = respuesta_ia.replace('**', '').replace('*', '').replace('“', '"').replace('”', '"').replace('—', '-')
+                        texto_limpio = texto_limpio.encode('latin-1', 'ignore').decode('latin-1')
+                        
                         pdf.multi_cell(0, 6, texto_limpio)
                         
-                        st.session_state['pdf_final'] = pdf.output(dest='S').encode('latin-1', errors='replace')
+                        pdf_bytes = pdf.output(dest='S')
+                        if isinstance(pdf_bytes, str):
+                            pdf_bytes = pdf_bytes.encode('latin-1', errors='replace')
+                            
+                        st.session_state['pdf_final'] = pdf_bytes
                         st.success("✅ Auditoría Generada Exitosamente")
-                        st.download_button("📥 DESCARGAR INFORME EN PDF", st.session_state['pdf_final'], f"Auditoria_{padron}_{depto}.pdf")
+                        
+            # El botón de descarga se muestra fuera del spinner si ya se generó el PDF
+            if 'pdf_final' in st.session_state:
+                st.download_button("📥 DESCARGAR INFORME EN PDF", st.session_state['pdf_final'], f"Auditoria_{padron}_{depto}.pdf")
+                
                 else:
                     st.error("La IA no está conectada. Revisa tu API Key.")
         else:
             st.warning("⚠️ Formato de coordenada no reconocido. Intenta usar números (ej: -32.32, -58.07) o grados (ej: 32°17'59\"S 58°03'29\"W).")
 
     except Exception as e:
-        st.info("Ingresa coordenadas válidas para ver el mapa.")
+        st.error(f"Error interno detectado: {e}")
 
 # ==========================================
 # MÓDULO 2: ASISTENTE AGRONÓMICO (TIPO ORTH)
