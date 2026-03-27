@@ -1,13 +1,6 @@
 streamlit
-
 pandas
-
 numpy
-
-plotly
-
-folium
-
-streamlit-folium
-
 fpdf
+google-generativeai
+Pillow
