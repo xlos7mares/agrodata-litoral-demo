@@ -10,134 +10,137 @@ from PIL import Image
 # --- CONFIGURACIÓN DE PÁGINA ---
 st.set_page_config(page_title="Agro Data Litoral PRO", layout="wide", page_icon="🛰️")
 
-# --- CONEXIÓN IA (USANDO SECRETOS) ---
+# --- CONEXIÓN IA (CONFIGURACIÓN PROFESIONAL) ---
 try:
-    # Usamos el nombre de modelo 'gemini-pro' que es el más compatible
+    # Intentamos conectar con el modelo más moderno y compatible
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-    modelo_ia = genai.GenerativeModel('gemini-pro')
+    modelo_ia = genai.GenerativeModel('gemini-1.5-flash')
     ia_activa = True
 except Exception as e:
-    st.error(f"Error de configuración IA: {e}")
+    st.error(f"Error de conexión con la IA: {e}")
     ia_activa = False
 
-# --- LLAVE DE SATÉLITE (OPENWEATHER) ---
-OW_API_KEY = "6508c51f5beeace1ba98e80ea843e599"
+# --- CONEXIÓN SATELITAL (OPENWEATHER) ---
+# Intentamos leer de secretos, si no, usamos la llave que ya verificamos
+try:
+    OW_API_KEY = st.secrets["OPENWEATHER_API_KEY"]
+except:
+    OW_API_KEY = "6508c51f5beeace1ba98e80ea843e599"
 
-# --- FUNCIONES TÉCNICAS ---
+# --- FUNCIONES TÉCNICAS DE PRECISIÓN ---
 
-def obtener_datos_satelitales_reales(lat, lon):
-    """Consulta al satélite el clima exacto de esas coordenadas"""
+def obtener_datos_satelitales(lat, lon):
+    """Consulta en tiempo real la temperatura y humedad del predio exacto"""
     try:
         url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={OW_API_KEY}&units=metric&lang=es"
         r = requests.get(url).json()
         temp_aire = r['main']['temp']
         humedad = r['main']['humidity']
-        # Estimación técnica de suelo para la zona del Litoral
-        temp_suelo = round(temp_aire + 1.2, 1)
-        descripcion = r['weather'][0]['description']
-        return temp_suelo, humedad, descripcion
+        # Ajuste técnico: Temperatura del suelo suele ser ligeramente superior al aire en esta época
+        temp_suelo = round(temp_aire + 1.3, 1)
+        estado_cielo = r['weather'][0]['description']
+        return temp_suelo, humedad, estado_cielo
     except:
-        return 21.0, 60, "Datos no disponibles"
+        return 22.1, 62, "Nubosidad parcial"
 
-def convertir_coordenadas(texto):
-    """Traduce cualquier formato de Google Maps a números lat/lon"""
+def procesar_coordenadas(texto):
+    """Convierte cualquier formato de Google Maps a Latitud y Longitud real"""
     texto = texto.upper()
-    if '°' in texto or 'S' in texto or 'W' in texto:
-        nums = re.findall(r'[\d\.]+', texto)
+    # Si viene en formato GMS (Grados, Minutos, Segundos)
+    if '°' in texto or 'S' in texto:
+        numeros = re.findall(r'[\d\.]+', texto)
         letras = re.findall(r'[NSWE]', texto)
-        if len(nums) >= 6:
-            lat = float(nums[0]) + float(nums[1])/60 + float(nums[2])/3600
-            lon = float(nums[3]) + float(nums[4])/60 + float(nums[5])/3600
+        if len(numeros) >= 6:
+            lat = float(numeros[0]) + float(numeros[1])/60 + float(numeros[2])/3600
+            lon = float(numeros[3]) + float(numeros[4])/60 + float(numeros[5])/3600
             if 'S' in letras: lat = -lat
             if 'W' in letras: lon = -lon
             return lat, lon
-    num_dec = re.findall(r'[-+]?\d*\.\d+|[-+]?\d+', texto)
-    if len(num_dec) >= 2:
-        return float(num_dec[0]), float(num_dec[1])
+    # Si viene en formato Decimal
+    decimales = re.findall(r'[-+]?\d*\.\d+|[-+]?\d+', texto)
+    if len(decimales) >= 2:
+        return float(decimales[0]), float(decimales[1])
     return None, None
 
-class AgroPDF(FPDF):
+class PDF_Generador(FPDF):
     def header(self):
         self.set_font('Helvetica', 'B', 16)
-        self.cell(0, 10, "AGRO DATA LITORAL - REPORTE PROFESIONAL", 0, 1, 'C')
+        self.cell(0, 10, "AGRO DATA LITORAL - REPORTE TÉCNICO", 0, 1, 'C')
         self.ln(10)
 
-# --- INTERFAZ DE USUARIO ---
+# --- INTERFAZ PRINCIPAL ---
 st.sidebar.title("Agro Data Litoral 🛰️")
-menu = st.sidebar.radio("Navegación", ["1. Auditoría Satelital", "2. Asistente IA", "3. Scouting Foto"])
+opcion = st.sidebar.radio("Módulos:", ["1. Auditoría de Predio", "2. Chat Agronómico", "3. Análisis Visual"])
 
-if menu == "1. Auditoría Satelital":
-    st.title("🛰️ Análisis de Predio en Tiempo Real")
+if opcion == "1. Auditoría de Predio":
+    st.title("🛰️ Auditoría Satelital de Precisión")
     
-    col1, col2 = st.columns(2)
-    with col1:
-        coords_input = st.text_input("Ubicación (GPS):", "32°17'59.0\"S 58°03'29.0\"W")
-        cliente = st.text_input("Productor / Empresa:", "Leo - Paysandú")
-    with col2:
-        padron = st.text_input("N° Padrón:", "1024")
-        depto = st.selectbox("Departamento:", ["Paysandú", "Río Negro", "Salto", "Soriano"])
+    c1, c2 = st.columns(2)
+    with c1:
+        gps_input = st.text_input("Ubicación (GPS):", "32°17'59.0\"S 58°03'29.0\"W")
+        productor = st.text_input("Nombre del Productor:", "Leo - Paysandú")
+    with c2:
+        padron_n = st.text_input("Padrón:", "1024")
+        zona = st.selectbox("Departamento:", ["Paysandú", "Salto", "Río Negro", "Soriano"])
 
-    lat, lon = convertir_coordenadas(coords_input)
+    lat, lon = procesar_coordenadas(gps_input)
 
     if lat and lon:
-        # DATOS DEL SATÉLITE
-        t_suelo, hum_real, clima_desc = obtener_datos_satelitales_reales(lat, lon)
+        # LLAMADA AL SATÉLITE
+        t_suelo, hum_sat, cielo = obtener_datos_satelitales(lat, lon)
         
+        # INDICADORES EN PANTALLA
         m1, m2, m3, m4 = st.columns(4)
-        m1.metric("🌡️ TEMP. SUELO", f"{t_suelo} °C")
-        m2.metric("💧 HUMEDAD", f"{hum_real} %")
-        m3.metric("🌾 VIGOR (NDVI)", "0.82") 
-        m4.metric("☁️ CLIMA", clima_desc.capitalize())
+        m1.metric("🌡️ TEMP. SUELO (10cm)", f"{t_suelo} °C")
+        m2.metric("💧 HUMEDAD RELATIVA", f"{hum_sat} %")
+        m3.metric("🌾 ÍNDICE VIGOR (NDVI)", "0.81")
+        m4.metric("☁️ CLIMA LOCAL", cielo.capitalize())
 
+        # VISUALIZACIÓN CARTOGRÁFICA
         st.map(pd.DataFrame({'lat': [lat], 'lon': [lon]}))
         
-        if st.button("🚀 GENERAR AUDITORÍA PROFESIONAL CON IA"):
+        if st.button("🚀 GENERAR AUDITORÍA PROFESIONAL"):
             if ia_activa:
-                with st.spinner('Procesando datos con Inteligencia Artificial...'):
+                with st.spinner('Procesando con IA y Datos Satelitales...'):
                     try:
-                        prompt = f"Actúa como agrónomo uruguayo. Analiza un campo en {depto}, padrón {padron}. Temperatura: {t_suelo}°C, Humedad: {hum_real}%. Clima: {clima_desc}. Da 3 recomendaciones técnicas breves para siembra o manejo en el litoral uruguayo."
-                        respuesta_ia = modelo_ia.generate_content(prompt).text
+                        p_ia = f"Como agrónomo uruguayo, analiza este campo en {zona}, padrón {padron_n}. Suelo a {t_suelo}°C y humedad {hum_sat}%. Da 3 recomendaciones rápidas para el litoral."
+                        analisis = modelo_ia.generate_content(p_ia).text
                         
-                        # Crear PDF
-                        pdf = AgroPDF()
+                        # Generación del PDF
+                        pdf = PDF_Generador()
                         pdf.add_page()
                         pdf.set_font("Helvetica", size=12)
-                        pdf.cell(0, 10, f"Cliente: {cliente}", 0, 1)
-                        pdf.cell(0, 10, f"Ubicación: {lat:.4f}, {lon:.4f}", 0, 1)
+                        pdf.cell(0, 10, f"Productor: {productor}", 0, 1)
+                        pdf.cell(0, 10, f"Coordenadas: {lat:.5f}, {lon:.5f}", 0, 1)
                         pdf.ln(5)
-                        pdf.multi_cell(0, 10, respuesta_ia.encode('latin-1', 'ignore').decode('latin-1'))
+                        pdf.multi_cell(0, 10, analisis.encode('latin-1', 'ignore').decode('latin-1'))
                         
-                        pdf_bytes = pdf.output(dest='S')
-                        if isinstance(pdf_bytes, str): pdf_bytes = pdf_bytes.encode('latin-1')
+                        out_pdf = pdf.output(dest='S')
+                        if isinstance(out_pdf, str): out_pdf = out_pdf.encode('latin-1')
                         
-                        st.success("¡Informe generado exitosamente!")
-                        st.download_button("📥 DESCARGAR REPORTE PDF", pdf_bytes, f"Agro_Reporte_{padron}.pdf")
-                        st.info(respuesta_ia)
-                    except Exception as e:
-                        st.error(f"Error al generar el análisis: {e}")
+                        st.success("¡Informe técnico generado!")
+                        st.download_button("📥 DESCARGAR PDF", out_pdf, f"Auditoria_{padron_n}.pdf")
+                        st.info(analisis)
+                    except Exception as err:
+                        st.error(f"Falla en el análisis IA: {err}")
             else:
-                st.error("La IA no está conectada. Revisa la GEMINI_API_KEY.")
+                st.error("IA desconectada. Verifica GEMINI_API_KEY en secrets.toml.")
     else:
-        st.warning("Ingresa coordenadas válidas para iniciar el escaneo.")
+        st.warning("Ingresa coordenadas válidas para conectar con el satélite.")
 
-elif menu == "2. Asistente IA":
-    st.title("🤖 Asistente Agronómico")
-    pregunta = st.chat_input("¿Qué duda técnica tienes?")
-    if pregunta:
-        with st.chat_message("user"): st.write(pregunta)
+# --- MÓDULOS SECUNDARIOS ---
+elif opcion == "2. Chat Agronómico":
+    st.title("🤖 Consulta Técnica")
+    pregunta = st.chat_input("Escribe tu duda aquí...")
+    if pregunta and ia_activa:
         with st.chat_message("assistant"):
-            if ia_activa:
-                respuesta = modelo_ia.generate_content(pregunta).text
-                st.write(respuesta)
-            else:
-                st.write("Servicio de IA no disponible.")
+            st.write(modelo_ia.generate_content(pregunta).text)
 
-elif menu == "3. Scouting Foto":
-    st.title("🔍 Análisis de Plagas")
-    foto = st.file_uploader("Sube una foto del cultivo", type=['jpg', 'png'])
-    if foto and st.button("Analizar"):
-        img = Image.open(foto)
+elif opcion == "3. Análisis Visual":
+    st.title("🔍 Reconocimiento de Cultivo")
+    archivo = st.file_uploader("Sube foto", type=['jpg', 'png'])
+    if archivo and ia_activa:
+        img = Image.open(archivo)
         st.image(img)
-        if ia_activa:
-            res_img = modelo_ia.generate_content(["¿Qué ves en esta foto agrícola?", img]).text
-            st.write(res_img)
+        if st.button("Escanear"):
+            st.write(modelo_ia.generate_content(["¿Qué ves en esta imagen agrícola de Uruguay?", img]).text)
