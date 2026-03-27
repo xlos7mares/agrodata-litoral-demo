@@ -130,7 +130,6 @@ if menu == "1. Análisis de Predio y PDF":
                         pdf.cell(0, 10, "EVALUACIÓN AGRONÓMICA ESTRUCTURAL", 0, 1)
                         pdf.set_font('Helvetica', '', 11)
                         
-                        # --- FILTRO DE LIMPIEZA PARA FPDF ---
                         texto_limpio = respuesta_ia.replace('**', '').replace('*', '').replace('“', '"').replace('”', '"').replace('—', '-')
                         texto_limpio = texto_limpio.encode('latin-1', 'ignore').decode('latin-1')
                         
@@ -142,13 +141,12 @@ if menu == "1. Análisis de Predio y PDF":
                             
                         st.session_state['pdf_final'] = pdf_bytes
                         st.success("✅ Auditoría Generada Exitosamente")
-                        
-            # El botón de descarga se muestra fuera del spinner si ya se generó el PDF
-            if 'pdf_final' in st.session_state:
-                st.download_button("📥 DESCARGAR INFORME EN PDF", st.session_state['pdf_final'], f"Auditoria_{padron}_{depto}.pdf")
-                
                 else:
                     st.error("La IA no está conectada. Revisa tu API Key.")
+                    
+            if 'pdf_final' in st.session_state:
+                st.download_button("📥 DESCARGAR INFORME EN PDF", st.session_state['pdf_final'], f"Auditoria_{padron}_{depto}.pdf")
+
         else:
             st.warning("⚠️ Formato de coordenada no reconocido. Intenta usar números (ej: -32.32, -58.07) o grados (ej: 32°17'59\"S 58°03'29\"W).")
 
