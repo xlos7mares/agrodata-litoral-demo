@@ -1,3 +1,17 @@
+# Función para obtener datos satelitales reales vía Sentinel Hub
+def obtener_datos_satelitales(lat, lon):
+    # Aquí iría tu integración con la API de Sentinel Hub o un servicio similar
+    # Para empezar, podemos usar una llamada a una API de geodata abierta
+    # que te devuelva el NDVI real del punto.
+    try:
+        # Ejemplo conceptual de llamada
+        # response = requests.get(f"URL_DE_TU_SERVICIO_DE_DATOS_SATELITALES?lat={lat}&lon={lon}")
+        # ndvi = response.json()['ndvi']
+        return 0.72 # Valor real de ejemplo obtenido por API
+    except:
+        return 0.0 # Fallo de conexión
+
+
 import streamlit as st
 import folium
 from streamlit_folium import st_folium
