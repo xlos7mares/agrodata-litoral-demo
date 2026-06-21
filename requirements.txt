@@ -4,3 +4,6 @@ numpy
 fpdf
 google-generativeai
 Pillow  
+folium
+streamlit-folium
+numpy
