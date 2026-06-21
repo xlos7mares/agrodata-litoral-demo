@@ -73,7 +73,18 @@ if opcion_menu == "🛰️ Consola de Auditoría Satelital y Suelos":
     st.markdown("---")
 
     coordenadas_default = "-32.339063, -57.921296" 
+    
+    # Se corrigió la cadena multilinea usando tres comillas dobles para evitar el SyntaxError
     coordenadas_input = st.text_input(
         "📍 Ingrese Coordenadas GPS (Latitud, Longitud):", 
         value=coordenadas_default,
-        help="Copie y pegue directamente desde Google Maps.
+        help="""Copie y pegue directamente desde Google Maps. Ejemplo: -32.339063, -57.921296"""
+    )
+
+    procesar_auditoria = st.button("🚀 Iniciar Escaneo y Consulta Satelital Cloud")
+
+    lat, lon = -32.339063, -57.921296
+    error_coordenadas = False
+    try:
+        if coordenadas_input:
+            partes = coordenadas_input.split
