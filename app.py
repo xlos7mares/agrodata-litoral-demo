@@ -1,124 +1,215 @@
 import streamlit as st
+import numpy as np
 import pandas as pd
-import requests
-import re
-import math
-from fpdf import FPDF
-import base64
 
-# --- 1. IDENTIDAD DEL CONSULTOR ---
-NOMBRE_CABECERA = "Leonardo Olivera"
-PERFIL_PROFESIONAL = "Estudiante de Agronomía | Desarrollador de Software | IA Aplicada al AGRO"
-CONTACTO_CEL = "099 417 716"
+# ==========================================
+# CONFIGURACIÓN DE LA PÁGINA Y ESTILO CLIENTE
+# ==========================================
+st.set_page_config(
+    page_title="Agro Data Litoral PRO",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
-st.set_page_config(page_title="Agro Data Litoral PRO", layout="wide", page_icon="🛰️")
-
-# --- 2. MOTOR DE CÁLCULOS (DINÁMICA TOTAL + VERTIENTES + SATÉLITE) ---
-OW_API_KEY = "6508c51f5beeace1ba98e80ea843e599"
-
-def obtener_datos_auditoria_total(lat, lon):
-    try:
-        url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={OW_API_KEY}&units=metric&lang=es"
-        r = requests.get(url, timeout=10).json()
-        t, h = r['main']['temp'], r['main']['humidity']
-        v = round(r['wind']['speed'] * 3.6, 1) 
-        tw = t * math.atan(0.151977 * (h + 8.313659)**0.5) + math.atan(t + h) - math.atan(h - 1.676331) + 0.00391838 * (h)**1.5 * math.atan(0.023101 * h) - 4.686035
-        dt = round(t - tw, 1)
-
-        # Índices Satelitales (RESTAURADOS TOTALMENTE)
-        ndvi = round(0.55 + (math.cos(lat) * 0.1), 2)
-        ndwi = round(0.2 + (h/400), 2)
-        lst = round(t + 3.5, 1)
-        evi = round(ndvi * 0.85, 2)
-        ndre = round(ndvi * 0.75, 2)
-        biomasa = round(ndvi * 12, 1)
-        prof_est = round(15 - (ndwi * 10) + (abs(t - lst) / 2), 1)
-
-        # Tesis y Lógica Regional
-        if -33.25 < lat < -30.0 and -58.5 < lon < -54.5:
-            reg, geo, cone, dem = "Litoral Norte", {"form":"Arapey","roca":"Basaltos","acu":"Guaraní"}, {"grupo":"12","suelo":"Brunosoles","util":"Alta fertilidad."}, {"litros":"60,000","riesgo":"Erosión."}
-            tesis = (f"ANÁLISIS EDAFOLÓGICO: Los Brunosoles del Grupo 12 presentan una saturación de bases envidiable, pero su escasa profundidad limita la Reserva de Agua Útil (AU) a solo 60,000 L/Ha. "
-                     f"DINÁMICA HÍDRICA: El gradiente térmico indica una zona de saturación o vertiente sub-superficial a {prof_est} m. Es vital evitar el sobrepastoreo para no sellar el suelo. "
-                     f"AUDITORÍA SATELITAL: Con un NDVI de {ndvi}, el cultivo muestra vigor, pero el LST de {lst}C sugiere que la inercia térmica es baja, riesgo de estrés hídrico rápido.")
-            rec = "Priorizar siembra directa y coberturas densas para proteger el basalto."
-        elif -35.0 < lat < -33.0 and -58.5 < lon < -56.5:
-            reg, geo, cone, dem = "Litoral Sur", {"form":"Libertad","roca":"Sedimentaria","acu":"Raigón"}, {"grupo":"10/11","suelo":"Vertisoles","util":"Máximo Potencial."}, {"litros":"140,000","riesgo":"Bajo."}
-            prof_est = round(prof_est - 3, 1)
-            tesis = f"ANÁLISIS: Suelos profundos con alta AU (140k L/Ha). Nivel freático a {prof_est} m. Alta biomasa detectada ({biomasa} Ton)."
-            rec = "Rotación intensiva para aprovechar el perfil profundo."
-        else:
-            reg, geo, cone, dem, tesis, rec = "Global", {"acu":"S/D"}, {"suelo":"S/D"}, {"litros":"80k"}, "Análisis estándar.", "Verificar localmente."
-
-        return t, h, v, dt, reg, geo, cone, dem, ndvi, evi, ndre, ndwi, lst, biomasa, tesis, rec, prof_est
-    except: return None
-
-# --- 3. INTERFAZ VISUAL ---
-st.markdown(f"""
-    <div style="background-color:#f8f9fa;padding:20px;border-radius:15px;border-left:10px solid #1b5e20;">
-        <h1 style="margin:0;color:#1b5e20;display: flex; align-items: center; gap: 10px;">🛰️ Agro Data Litoral 🌱</h1>
-        <h2 style="margin:5px 0;color:#333;">{NOMBRE_CABECERA}</h2>
-        <p style="margin:0;font-size:1em;color:#555;"><b>{PERFIL_PROFESIONAL}</b></p>
-        <p style="margin:5px 0;color:#1b5e20;">📞 Cel: <b>{CONTACTO_CEL}</b></p>
-    </div>
+# Estética ejecutiva y moderna: tonos oscuros y dorados
+st.markdown("""
+    <style>
+    .main { background-color: #111111; color: #FFFFFF; }
+    h1, h2, h3 { color: #D4AF37 !important; }
+    .stButton>button {
+        background-color: #D4AF37;
+        color: #111111;
+        font-weight: bold;
+        border-radius: 5px;
+        border: none;
+        width: 100%;
+        transition: 0.3s;
+    }
+    .stButton>button:hover { background-color: #AA8515; color: #FFFFFF; }
+    div[data-testid="stMetricValue"] { color: #D4AF37 !important; }
+    .report-box {
+        border: 1px solid #D4AF37;
+        padding: 15px;
+        border-radius: 5px;
+        background-color: #1a1a1a;
+        margin-bottom: 20px;
+    }
+    </style>
 """, unsafe_allow_html=True)
 
-st.title("Consola de Analítica y Auditoría Agronómica 🌱🌾")
-gps_in = st.text_input("📍 Ingrese Coordenadas GPS:", "-32.3055, -58.0697")
-coords = re.findall(r'[-+]?\d*\.\d+|[-+]?\d+', gps_in)
+# ==========================================
+# PANEL LATERAL - IDENTIDAD Y RECOLECCIÓN
+# ==========================================
+st.sidebar.image("https://img.icons8.com/plots/100/D4AF37/satellite.png", width=80)
+st.sidebar.title("AGRO DATA LITORAL")
+st.sidebar.markdown("---")
+st.sidebar.info("🔬 **Búnker Analítico Base**\nPaysandú, Uruguay\nContacto: **099 417 716**")
 
-if len(coords) >= 2:
-    st.session_state.lat, st.session_state.lon = float(coords[0]), float(coords[1])
-    res = obtener_datos_auditoria_total(st.session_state.lat, st.session_state.lon)
+# Selector de Módulo principal
+modulo = st.sidebar.radio(
+    "Seleccione la Solución Analítica:",
+    [
+        "Simulador de Relieve Dinámico",
+        "Algoritmo de Intercambio Catiónico (Suelo)",
+        "Búfer de Compensación por Daño Biótico (Semilla)"
+    ]
+)
+
+# ==========================================
+# MÓDULO 1: SIMULADOR DE RELIEVE DINÁMICO
+# ==========================================
+if modulo == "Simulador de Relieve Dinámico":
+    st.title("📐 Simulador de Relieve Dinámico y Escorrentía Superficial")
+    st.markdown("""
+    **Fundamento Técnico:** Esta máquina algebraica utiliza relaciones trigonométricas y geometría analítica para proyectar vectores de movimiento del agua sobre un plano inclinado, prediciendo zonas de pérdida de insumos por escurrimiento hídrico.
+    """)
+    st.markdown("---")
+
+    col1, col2 = st.columns(2)
+    with col1:
+        st.subheader("Datos Métricos del Terreno")
+        distancia = st.number_input("Distancia horizontal entre puntos de control (metros):", min_value=1.0, value=100.0, step=10.0)
+        desnivel = st.number_input("Desnivel o diferencia de altura (metros):", min_value=0.0, value=5.0, step=0.5)
+        superficie_ha = st.number_input("Superficie del ambiente afectado (Hectáreas):", min_value=1, value=80, step=5)
     
-    if res:
-        t, h, v, dt, reg, geo, cone, dem, ndvi, evi, ndre, ndwi, lst, biomasa, tesis, rec, prof_est = res
-        st.map(pd.DataFrame({'lat': [st.session_state.lat], 'lon': [st.session_state.lon]}))
+    # --- LA MÁQUINA MATEMÁTICA (Funciones trigonométricas) ---
+    # Pendiente (m) = desnivel / distancia
+    pendiente_porcentaje = (desnivel / distancia) * 100
+    # Ángulo en radianes usando arcoseno
+    angulo_rad = np.arcsin(desnivel / distancia) if distancia >= desnivel else 0
+    angulo_grados = np.degrees(angulo_rad)
 
-        # SECCIÓN 1: TELEMETRÍA
-        st.markdown("### 🌡️ Telemetría Atmosférica y Aplicación")
-        m1, m2, m3, m4 = st.columns(4)
-        m1.metric("TEMP. AIRE", f"{t} °C"); m2.metric("HUMEDAD", f"{h} %")
-        m3.metric("VIENTO", f"{v} km/h"); m4.metric("DELTA T", f"{dt}")
+    with col2:
+        st.subheader("Diagnóstico Estructural de Escorrentía")
+        st.metric(label="Pendiente Calculada", value=f"{pendiente_porcentaje:.2f} %")
+        st.metric(label="Ángulo de Inclinación", value=f"{angulo_grados:.2f}°")
 
-        st.divider()
+    st.markdown("---")
+    st.subheader("📋 Reporte Técnico Automatizado")
+    
+    with st.container():
+        if pendiente_porcentaje > 4.0:
+            st.error(f"⚠️ **ALTA CRITICIDAD DETECTADA EN {superficie_ha} HECTÁREAS**")
+            st.markdown(f"""
+            <div class="report-box">
+            <b>Diagnóstico de Dinámica Hídrica:</b> La pendiente supera el umbral crítico de absorción. El agua pluvial generará vectores de arrastre de alta velocidad hacia las cotas inferiores.<br><br>
+            <b>Recomendación Profesional:</b> Evitar aplicaciones de fertilizantes nitrogenados o enmiendas en superficie antes de precipitaciones pronosticadas mayores a 15 mm. Se sugiere fraccionar la dosificación o realizar siembras en contorno (siguiendo curvas de nivel trigonométricas) para interrumpir el flujo del agua.
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.success(f"✅ **ESTABILIDAD DINÁMICA DETECTADA EN {superficie_ha} HECTÁREAS**")
+            st.markdown(f"""
+            <div class="report-box">
+            <b>Diagnóstico de Dinámica Hídrica:</b> El relieve presenta una inclinación controlada ({pendiente_porcentaje:.2f} %). La velocidad de infiltración supera la velocidad de escorrentía superficial.<br><br>
+            <b>Recomendación Profesional:</b> Zona apta para optimización del rendimiento mediante fertilización estándar basal. El riesgo de lavado horizontal de nutrientes es mínimo.
+            </div>
+            """, unsafe_allow_html=True)
 
-        # SECCIÓN 2: AUDITORÍA SATELITAL (RESTABLECIDA)
-        st.markdown("### 🌿 Auditoría Satelital de Salud y Vigor")
-        s1, s2, s3 = st.columns(3)
-        with s1: st.metric("NDVI (Salud)", ndvi); st.metric("EVI (Vigor)", evi)
-        with s2: st.metric("NDWI (Agua)", ndwi); st.metric("LST (Suelo)", f"{lst} °C")
-        with s3: st.metric("NDRE (Nitrógeno)", ndre); st.metric("Biomasa Est.", f"{biomasa} Ton")
+# ==========================================
+# MÓDULO 2: ALGORITMO DE INTERCAMBIO CATIÓNICO
+# ==========================================
+elif modulo == "Algoritmo de Intercambio Catiónico (Suelo)":
+    st.title("🧪 Algoritmo de Intercambio Catiónico y Balance de Humedad Crítica")
+    st.markdown("""
+    **Fundamento Técnico:** Transforma las mediciones físicas milimétricas obtenidas en el proceso de sedimentación física (método del frasco) en coeficientes químicos estimados de retención de nutrientes (Capacidad de Intercambio Catiónico - CIC) sin costo de reactivos.
+    """)
+    st.markdown("---")
 
-        st.divider()
+    col1, col2 = st.columns(2)
+    with col1:
+        st.subheader("Entrada de Datos de Sedimentación (Regla Milimétrica)")
+        h_arena = st.number_input("Capa Inferior - Arena (mm):", min_value=0.0, value=25.0, step=1.0)
+        h_limo = st.number_input("Capa Intermedia - Limo (mm):", min_value=0.0, value=15.0, step=1.0)
+        h_arcilla = st.number_input("Capa Superior - Arcilla (mm):", min_value=0.0, value=10.0, step=1.0)
+        
+        ejecutar_suelo = st.button("Procesar Muestra de Suelo")
 
-        # SECCIÓN 3: CAJAS TÉCNICAS
-        col_c1, col_c2, col_c3 = st.columns(3)
-        with col_c1:
-            st.success(f"### 📐 Grupo CONEAT \n ## {cone['grupo']}")
-            st.write(f"**Suelo:** {cone['suelo']} | **Uso:** {cone['util']}")
-        with col_c2:
-            st.info(f"### ⛰️ Geología \n ## {geo['form']}")
-            st.write(f"**Agua (Vertiente):** {prof_est} m | **Roca:** {geo['roca']}")
-        with col_c3:
-            st.warning("### 📐 DEM (Digital) \n ## Pendiente")
-            st.write(f"**Reserva:** {dem['litros']} L/Ha | **Riesgo:** {dem['riesgo']}")
+    if ejecutar_suelo or h_arena > 0:
+        h_total = h_arena + h_limo + h_arcilla
+        if h_total > 0:
+            pct_arena = (h_arena / h_total) * 100
+            pct_limo = (h_limo / h_total) * 100
+            pct_arcilla = (h_arcilla / h_total) * 100
 
-        st.divider()
-        st.markdown(f"### 🎓 Tesis Técnica de Interpretación: {reg}")
-        st.info(tesis)
-        st.success(f"**Sugerencia:** {rec}")
+            # --- LA MÁQUINA MATEMÁTICA (Función de estimación lineal de retención / CIC) ---
+            # La arcilla aporta la mayor cantidad de cargas negativas al suelo
+            cic_estimada = (pct_arcilla * 0.4) + (pct_limo * 0.1) + 2.0 
 
-        # BOTÓN PDF (INCLUYE TODO)
-        if st.button("🚀 GENERAR INFORME TÉCNICO OFICIAL"):
-            pdf = FPDF()
-            pdf.add_page()
-            pdf.set_font("Arial", 'B', 16)
-            pdf.cell(0, 10, "INFORME AGRO DATA LITORAL", ln=True, align='C')
-            pdf.set_font("Arial", size=10)
-            pdf.multi_cell(0, 5, f"\nRegión: {reg} | Coord: {st.session_state.lat}, {st.session_state.lon}\n\n"
-                                 f"SATÉLITE: NDVI {ndvi} | NDRE {ndre} | LST {lst}C | Biomasa {biomasa} Ton\n"
-                                 f"SUELO: Grupo {cone['grupo']} | Agua detectada a {prof_est} m\n\n"
-                                 f"TESIS: {tesis}\n\nSUGERENCIA: {rec}")
-            b64 = base64.b64encode(pdf.output(dest='S').encode('latin-1')).decode()
-            href = f'<a href="data:application/pdf;base64,{b64}" download="Informe_ADL.pdf" style="padding:15px;background-color:#1b5e20;color:white;border-radius:10px;text-decoration:none;display:inline-block;">📥 DESCARGAR REPORTE</a>'
-            st.markdown(href, unsafe_allow_html=True)
+            with col2:
+                st.subheader("Composición Física Porcentual")
+                st.write(f"**Arena (Estructura Macroporosa):** {pct_arena:.1f}%")
+                st.write(f"**Limo (Estructura Media):** {pct_limo:.1f}%")
+                st.write(f"**Arcilla (Estructura Microporosa):** {pct_arcilla:.1f}%")
+                st.metric(label="Capacidad de Retención Química Estimada (CIC)", value=f"{cic_estimada:.1f} meq/100g")
+
+            st.markdown("---")
+            st.subheader("📋 Diagnóstico de Textura y Nutrición")
+            
+            with st.container():
+                if pct_arena > 60.0:
+                    st.warning("⚠️ **SUELO TEXTURALMENTE LIGERO (FRANCO-ARENOSO / ARENOSO)**")
+                    st.markdown(f"""
+                    <div class="report-box">
+                    <b>Comportamiento Físico-Químico:</b> Alta tasa de macroporos. El agua drena con excesiva velocidad vertical. Sus 'imanes' químicos estructurales son reducidos debido al bajo porcentaje de arcilla.<br><br>
+                    <b>Impacto Operativo:</b> Si aplica dosis masivas de Urea o nitrógeno líquido, gran parte se lixiviará al subsuelo antes de ser captado por el cultivo.<br><br>
+                    <b>Estrategia Recomendada:</b> Fraccionar la fertilización nitrogenada en 2 o 3 aplicaciones a lo largo del ciclo biológico.
+                    </div>
+                    """, unsafe_allow_html=True)
+                else:
+                    st.success("✅ **SUELO TEXTURALMENTE EQUILIBRADO / PESADO**")
+                    st.markdown(f"""
+                    <div class="report-box">
+                    <b>Comportamiento Físico-Químico:</b> Excelente balance de retención hídrica y microporos. La arcilla presente ({pct_arcilla:.1f}%) confiere un búfer catiónico estable que retiene cationes (K+, Ca++, Mg++, NH4+).<br><br>
+                    <b>Impacto Operativo:</b> Capacidad de respuesta óptima a la fertilización pesada de fondo. Riesgo mínimo de lavado de nutrientes bajo condiciones de lluvia normales.
+                    </div>
+                    """, unsafe_allow_html=True)
+
+# ==========================================
+# MÓDULO 3: BÚFER DE COMPENSACIÓN POR DAÑO BIÓTICO
+# ==========================================
+elif modulo == "Búfer de Compensación por Daño Biótico (Semilla)":
+    st.title("🌿 Búfer de Compensación por Daño Biótico en Semilla y Densidad")
+    st.markdown("""
+    **Fundamento Técnico:** Función de optimización biológica que procesa el porcentaje físico de granos dañados (identificados bajo microscopía/lupa macro) para corregir matemáticamente la densidad de siembra real, previniendo fallas en el Índice de Área Foliar (LAI).
+    """)
+    st.markdown("---")
+
+    col1, col2 = st.columns(2)
+    with col1:
+        st.subheader("Muestreo Físico de Laboratorio (Base 100g)")
+        peso_total = st.number_input("Peso total de la submuestra analizada (gramos):", min_value=10.0, value=100.0, step=10.0)
+        peso_danados = st.number_input("Peso de granos con defectos bióticos observados (gramos):", min_value=0.0, value=6.0, step=0.5)
+        
+        st.markdown("**Parámetros de Siembra Originales:**")
+        densidad_objetivo = st.number_input("Plantas objetivo por metro cuadrado (diseño original):", min_value=10, value=30, step=5)
+        costo_bolsa = st.number_input("Costo por bolsa de semilla (USD):", min_value=1.0, value=45.0, step=5.0)
+        has_totales = st.number_input("Superficie Total a Sembrar (Hectáreas):", min_value=1, value=200, step=10)
+
+    # --- LA MÁQUINA MATEMÁTICA (Función de compensación morfológica) ---
+    pct_dano = (peso_danados / peso_total) * 100
+    
+    # Coeficiente de pérdida: el grano dañado reduce la germinación real de forma exponencial/lineal corregida
+    factor_correccion = 1 / (1 - (pct_dano / 100))
+    densidad_corregida = densidad_objetivo * factor_correccion
+    
+    # Simulación financiera de ahorro por precisión
+    semilla_ahorrada_por_ajuste = (densidad_corregida - densidad_objetivo) * 0.05 * has_totales # Estimación física simulada
+    ahorros_usd = np.clip(semilla_ahorrada_por_ajuste * (costo_bolsa / 40), 0.0, 15000.0)
+
+    with col2:
+        st.subheader("Métricas de Laboratorio y Densidad Dinámica")
+        st.metric(label="Porcentaje de Daño en Semilla", value=f"{pct_dano:.2f} %")
+        st.metric(label="Densidad Recomendada Ajustada", value=f"{int(np.ceil(densidad_corregida))} pl/m²", delta=f"+{int(np.ceil(densidad_corregida - densidad_objetivo))} pl/m²")
+        st.metric(label="Retorno Económico Estimado por Corrección", value=f"USD {ahorros_usd:.2f}")
+
+    st.markdown("---")
+    st.subheader("📋 Recomendación de Manejo Biológico")
+    
+    with st.container():
+        st.markdown(f"""
+        <div class="report-box">
+        <b>Análisis Fisiológico de la Muestra:</b> El lote presenta un {pct_dano:.2f}% de daño estructural (físico/biótico). Las plantas viables resultantes manifestarán una reducción en la tasa de expansión foliar inicial.<br><br>
+        <b>Acción de Precisión:</b> Para alcanzar el Índice de Área Foliar óptimo y cerrar el entresurco a tiempo, la densidad mecánica de siembra debe incrementarse exactamente a <b>{int(np.ceil(densidad_corregida))} plantas por metro cuadrado</b> en las zonas afectadas.<br><br>
+        <b>Impacto de Negocio:</b> Al calibrar la sembradora con este factor de búfer en lugar de sobredosificar el campo completo de {has_totales} hectáreas a ciegas, se proyecta una optimización de insumos valorada en <b>USD {ahorros_usd:.2f}</b>.
+        </div>
+        """, unsafe_allow_html=True)
