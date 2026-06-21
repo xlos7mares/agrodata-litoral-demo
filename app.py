@@ -5,6 +5,15 @@ import numpy as np
 import pandas as pd
 import requests
 
+def obtener_clima_real(lat, lon):
+    try:
+        api_key = st.secrets["OPENWEATHER_API_KEY"]
+        url = f"http://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={api_key}&units=metric&lang=es"
+        res = requests.get(url).json()
+        return res['main']['temp'], res['main']['humidity'], res['wind']['speed'] * 3.6
+    except:
+        return 0.0, 0.0, 0.0
+
 # =====================================================================
 # 🛰️ CONFIGURACIÓN DE LA PÁGINA E IDENTIDAD VISUAL EXECUTIVE GOLD
 # =====================================================================
