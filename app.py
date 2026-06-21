@@ -6,7 +6,7 @@ import pandas as pd
 import requests
 
 # =====================================================================
-# 🛰️ CONFIGURACIÓN Y ESTILO (REVISADO)
+# 🛰️ CONFIGURACIÓN Y ESTILO (EXECUTIVE GOLD)
 # =====================================================================
 st.set_page_config(page_title="Agro Data Litoral PRO", layout="wide", initial_sidebar_state="expanded")
 
@@ -20,18 +20,14 @@ h1, h2, h3, h4 { color: #D4AF37 !important; font-family: 'Helvetica Neue', sans-
 """, unsafe_allow_html=True)
 
 # =====================================================================
-# 🌤️ MOTOR DE CLIMA REAL (CORREGIDO)
+# 🌤️ MOTOR DE CLIMA REAL
 # =====================================================================
 def obtener_clima_real(lat, lon):
     try:
         api_key = st.secrets["OPENWEATHER_API_KEY"]
         url = f"http://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={api_key}&units=metric&lang=es"
-        # AQUÍ ESTABA EL ERROR: El paréntesis de .get() debe cerrarse correctamente
         res = requests.get(url).json()
-        temp = res['main']['temp']
-        hum = res['main']['humidity']
-        viento = res['wind']['speed'] * 3.6
-        return temp, hum, viento
+        return res['main']['temp'], res['main']['humidity'], res['wind']['speed'] * 3.6
     except:
         return 0.0, 0.0, 0.0
 
@@ -43,29 +39,32 @@ st.sidebar.markdown("# AGRO DATA LITORAL")
 opcion_menu = st.sidebar.radio("Módulo:", ["🛰️ Consola de Auditoría Satelital y Suelos", "📐 Laboratorio de Funciones Matemáticas Especiales"])
 
 # =====================================================================
-# 🛰️ MÓDULO: AUDITORÍA SATELITAL
+# 🛰️ MÓDULO: AUDITORÍA SATELITAL (CON PERSISTENCIA)
 # =====================================================================
 if opcion_menu == "🛰️ Consola de Auditoría Satelital y Suelos":
     st.title("🛰️ Consola de Analítica y Auditoría Agronómica")
-    coordenadas_input = st.text_input("📍 Ingrese Coordenadas (Lat, Lon):", value="-32.339063, -57.921296")
-    procesar_auditoria = st.button("🚀 Iniciar Escaneo Real")
+    
+    if "datos_cargados" not in st.session_state:
+        st.session_state.datos_cargados = False
 
-    lat, lon = -32.339063, -57.921296
-    try:
-        lat, lon = [float(x.strip()) for x in coordenadas_input.split(",")]
-    except:
-        st.error("❌ Formato inválido.")
-
-    if procesar_auditoria:
+    coord_input = st.text_input("📍 Ingrese Coordenadas (Lat, Lon):", value="-32.339063, -57.921296")
+    
+    if st.button("🚀 Iniciar Escaneo Real"):
+        lat, lon = [float(x.strip()) for x in coord_input.split(",")]
         temp, hum, viento = obtener_clima_real(lat, lon)
+        st.session_state.datos_cargados = True
+        st.session_state.t, st.session_state.h, st.session_state.v = temp, hum, viento
+        st.session_state.lat, st.session_state.lon = lat, lon
+
+    if st.session_state.datos_cargados:
         st.markdown("### 🌡️ Telemetría Atmosférica REAL")
         c1, c2, c3 = st.columns(3)
-        c1.metric("TEMP. REAL", f"{temp:.1f} °C")
-        c2.metric("HUMEDAD", f"{hum:.0f} %")
-        c3.metric("VIENTO", f"{viento:.1f} km/h")
+        c1.metric("TEMP.", f"{st.session_state.t:.1f} °C")
+        c2.metric("HUMEDAD", f"{st.session_state.h:.0f} %")
+        c3.metric("VIENTO", f"{st.session_state.v:.1f} km/h")
         
-        m = folium.Map(location=[lat, lon], zoom_start=14)
-        folium.Marker([lat, lon]).add_to(m)
+        m = folium.Map(location=[st.session_state.lat, st.session_state.lon], zoom_start=14)
+        folium.Marker([st.session_state.lat, st.session_state.lon]).add_to(m)
         st_folium(m, width=900, height=350)
 
 # =====================================================================
