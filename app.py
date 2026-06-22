@@ -8,17 +8,12 @@ import numpy as np
 st.set_page_config(page_title="Agro Data Litoral PRO", layout="wide")
 
 # =====================================================================
-# INICIALIZACIÓN DE ESTADO (Para que los datos no desaparezcan)
-# =====================================================================
-if "datos" not in st.session_state:
-    st.session_state.datos = None
-
-# =====================================================================
-# MOTORES DE DATOS
+# MOTORES DE DATOS (Mantenemos la estructura)
 # =====================================================================
 def obtener_datos(lat, lon):
-    # Aquí iría tu conexión a Copernicus, mantenemos el 0.74 como respaldo sólido
-    return 8.0, 74, 13.4, 0.74 
+    # Aquí puedes volver a integrar la lógica real de Copernicus/OpenWeather
+    # Simulamos el procesamiento para garantizar estabilidad en la presentación
+    return 15.5, 62, 18.2, 0.76 
 
 # =====================================================================
 # INTERFAZ
@@ -30,13 +25,24 @@ if opcion_menu == "🛰️ Consola de Auditoría Satelital y Suelos":
     st.title("🛰️ Consola de Analítica y Auditoría Agronómica")
     coord_input = st.text_input("📍 Coordenadas (Lat, Lon):", value="-32.339063, -57.921296")
     
+    # BOTÓN DE ACCIÓN: Se ejecuta siempre que cambies el input y presiones el botón
     if st.button("🚀 Iniciar Escaneo"):
-        # Guardamos los resultados en el estado de la sesión
-        t, h, v, ndvi = obtener_datos(float(coord_input.split(",")[0]), float(coord_input.split(",")[1]))
-        st.session_state.datos = {"t": t, "h": h, "v": v, "ndvi": ndvi, "lat": -32.339, "lon": -57.921}
+        try:
+            # Dividimos y convertimos coordenadas
+            coords = [float(x.strip()) for x in coord_input.split(",")]
+            lat, lon = coords[0], coords[1]
+            
+            # Obtenemos datos nuevos
+            t, h, v, ndvi = obtener_datos(lat, lon)
+            
+            # ACTUALIZAMOS EL ESTADO CON LOS NUEVOS DATOS
+            st.session_state.datos = {"t": t, "h": h, "v": v, "ndvi": ndvi, "lat": lat, "lon": lon}
+            
+        except Exception as e:
+            st.error("Error al procesar coordenadas. Asegúrate de usar el formato: -32.33, -57.92")
 
-    # Si hay datos guardados, los mostramos siempre
-    if st.session_state.datos:
+    # Muestra los datos si existen en memoria
+    if "datos" in st.session_state and st.session_state.datos:
         d = st.session_state.datos
         c1, c2, c3, c4 = st.columns(4)
         c1.metric("TEMP.", f"{d['t']:.1f} °C")
