@@ -1,9 +1,6 @@
 streamlit
-pandas
-numpy
-fpdf
-google-generativeai
-Pillow  
-folium
 streamlit-folium
+requests
+sentinelhub
 numpy
+pandas
