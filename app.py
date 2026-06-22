@@ -3,11 +3,9 @@ import folium
 from streamlit_folium import st_folium
 import requests
 import numpy as np
-from sentinelhub import SentinelHubRequest, DataCollection, BBox, CRS, MimeType
+from sentinelhub import SentinelHubRequest, DataCollection, BBox, CRS, MimeType, SHConfig
 
-# =====================================================================
-# 🛰️ CONFIGURACIÓN Y ESTILO
-# =====================================================================
+# Configuración de página
 st.set_page_config(page_title="Agro Data Litoral PRO", layout="wide")
 
 st.markdown("""
@@ -19,41 +17,40 @@ h1, h2, h3, h4 { color: #D4AF37 !important; }
 """, unsafe_allow_html=True)
 
 # =====================================================================
-# 🛰️ MOTOR DE DATOS SATELITALES REALES (INTEGRACIÓN ESA/COPERNICUS)
+# MOTORES DE DATOS
 # =====================================================================
 def obtener_ndvi_real(lat, lon):
     try:
-        # BBox definido para el lote
+        config = SHConfig()
+        config.sh_client_id = st.secrets["COPERNICUS_CLIENT_ID"]
+        config.sh_client_secret = st.secrets["COPERNICUS_CLIENT_SECRET"]
+        
         bbox = BBox(bbox=[lon-0.005, lat-0.005, lon+0.005, lat+0.005], crs=CRS.WGS84)
         
-        # Script técnico de evaluación espectral NDVI
-        evalscript = """
-        //VERSION=3
-        function setup() { return { input: ["B04", "B08"], output: { bands: 1 } }; }
-        function evaluatePixel(sample) {
-            let ndvi = (sample.B08 - sample.B04) / (sample.B08 + sample.B04);
-            return [ndvi];
-        }
-        """
-        
         request = SentinelHubRequest(
-            evalscript=evalscript,
+            evalscript="""
+            //VERSION=3
+            function setup() { return { input: ["B04", "B08"], output: { bands: 1 } }; }
+            function evaluatePixel(sample) {
+                let ndvi = (sample.B08 - sample.B04) / (sample.B08 + sample.B04);
+                return [ndvi];
+            }
+            """,
             input_data=[SentinelHubRequest.input_data(
                 data_collection=DataCollection.SENTINEL2,
                 time_interval=('2026-06-01', '2026-06-22')
             )],
             responses=[SentinelHubRequest.output_response('default', MimeType.TIFF)],
             bbox=bbox,
-            config=st.secrets["COPERNICUS_CLIENT_ID"]
+            config=config
         )
         data = request.get_data()
-        return round(float(np.nanmean(data[0])), 2)
+        if data and len(data) > 0 and data[0] is not None:
+            return round(float(np.nanmean(data[0])), 2)
+        return "Sin datos"
     except Exception as e:
-        return 0.0 # Valor de respaldo si no hay datos satelitales hoy
+        return f"Error: {str(e)[:20]}"
 
-# =====================================================================
-# 🌤️ MOTOR DE CLIMA REAL
-# =====================================================================
 def obtener_clima_real(lat, lon):
     try:
         api_key = st.secrets["OPENWEATHER_API_KEY"]
@@ -64,7 +61,7 @@ def obtener_clima_real(lat, lon):
         return 0.0, 0.0, 0.0
 
 # =====================================================================
-# 🏢 INTERFAZ PRINCIPAL
+# INTERFAZ
 # =====================================================================
 st.sidebar.markdown("# AGRO DATA LITORAL")
 opcion_menu = st.sidebar.radio("Módulo:", ["🛰️ Consola de Auditoría Satelital y Suelos", "📐 Laboratorio de Funciones Matemáticas Especiales"])
@@ -98,5 +95,4 @@ if opcion_menu == "🛰️ Consola de Auditoría Satelital y Suelos":
 
 elif opcion_menu == "📐 Laboratorio de Funciones Matemáticas Especiales":
     st.title("📐 Laboratorio de Funciones")
-    sub = st.selectbox("Algoritmo:", ["Simulador de Relieve", "Algoritmo CIC", "Búfer de Daño"])
-    # [Resto de tu lógica de laboratorio aquí...]
+    # [Resto de tu lógica de laboratorio...]
