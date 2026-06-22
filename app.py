@@ -3,12 +3,25 @@ import folium
 from streamlit_folium import st_folium
 import requests
 import numpy as np
-from sentinelhub import SentinelHubRequest, DataCollection, BBox, CRS, MimeType, SHConfig
+from sentinelhub import SentinelHubRequest, BBox, CRS, MimeType, SHConfig
 
+# Usaremos un diccionario simple para las colecciones en lugar del objeto directo
+# para evitar el error de 'type object'
+DATA_COLLECTION_SENTINEL2 = "S2L2A" 
+
+# Configuración básica
 st.set_page_config(page_title="Agro Data Litoral PRO", layout="wide")
 
+st.markdown("""
+<style>
+.main { background-color: #111111; color: #FFFFFF; }
+h1, h2, h3, h4 { color: #D4AF37 !important; }
+.stButton>button { background-color: #D4AF37; color: #111111; font-weight: bold; }
+</style>
+""", unsafe_allow_html=True)
+
 # =====================================================================
-# CONEXIÓN REAL - SIN RESPALDOS FICTICIOS
+# MOTOR DE DATOS REALES
 # =====================================================================
 def obtener_ndvi_real(lat, lon):
     config = SHConfig()
@@ -17,37 +30,37 @@ def obtener_ndvi_real(lat, lon):
     
     bbox = BBox(bbox=[lon-0.005, lat-0.005, lon+0.005, lat+0.005], crs=CRS.WGS84)
     
-    # Intentamos la conexión directa
     request = SentinelHubRequest(
-        evalscript="""
-        //VERSION=3
-        function setup() { return { input: ["B04", "B08"], output: { bands: 1 } }; }
-        function evaluatePixel(sample) {
-            let ndvi = (sample.B08 - sample.B04) / (sample.B08 + sample.B04);
-            return [ndvi];
-        }
-        """,
+        evalscript="return [index]",
         input_data=[SentinelHubRequest.input_data(
-            data_collection=DataCollection.SENTINEL2,
+            data_collection=DATA_COLLECTION_SENTINEL2,
             time_interval=('2026-06-01', '2026-06-22')
         )],
         responses=[SentinelHubRequest.output_response('default', MimeType.TIFF)],
         bbox=bbox,
         config=config
     )
-    # Si esta línea falla, el error técnico será visible en la pantalla
     data = request.get_data()
     return round(float(np.nanmean(data[0])), 2)
 
 # =====================================================================
-# INTERFAZ (LOGICA DE VISUALIZACIÓN)
+# INTERFAZ
 # =====================================================================
 st.sidebar.markdown("# AGRO DATA LITORAL")
-if st.sidebar.button("🚀 Iniciar Escaneo REAL"):
+st.title("🛰️ Consola de Analítica y Auditoría Agronómica")
+
+coord_input = st.text_input("📍 Ingrese Coordenadas (Lat, Lon):", value="-32.339063, -57.921296")
+
+if st.button("🚀 Iniciar Escaneo REAL"):
     try:
-        # Aquí forzamos la conexión
-        lat, lon = -32.339, -57.921
+        lat, lon = [float(x.strip()) for x in coord_input.split(",")]
+        # Obtenemos datos
         ndvi = obtener_ndvi_real(lat, lon)
         st.success(f"Dato capturado vía Satélite: {ndvi}")
+        
+        # Mapa
+        m = folium.Map(location=[lat, lon], zoom_start=14)
+        folium.Marker([lat, lon]).add_to(m)
+        st_folium(m, width=900, height=350)
     except Exception as e:
         st.error(f"FALLO DE CONEXIÓN: {e}")
