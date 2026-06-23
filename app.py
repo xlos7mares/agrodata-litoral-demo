@@ -2,6 +2,7 @@ import streamlit as st
 import ee
 import json
 import leafmap.foliumap as leafmap
+import requests
 
 # --- 1. AUTENTICACIÓN ---
 def authenticate_ee():
@@ -15,51 +16,43 @@ def authenticate_ee():
 authenticate_ee()
 
 st.set_page_config(layout="wide", page_title="Agro Data Litoral PRO")
-st.title("📊 Panel Científico: Auditoría Agronómica de Precisión")
+st.title("📊 Panel de Diagnóstico Agronómico - Tiempo Real")
 
-# --- 2. ENTRADAS DE USUARIO ---
-col_in, col_map = st.columns([1, 3])
-with col_in:
-    coord_text = st.text_input("📍 Pega Coordenadas (Lat, Lon):", value="-32.339, -57.921")
-    temp_local = st.number_input("🌡️ Temp. local termómetro (°C) (opcional, para calibración):", value=0.0)
-    btn_ejecutar = st.button("🚀 Iniciar Auditoría Científica")
+coord_text = st.text_input("📍 Pega Coordenadas (Lat, Lon):", value="-32.339, -57.921")
+btn_ejecutar = st.button("🚀 Iniciar Auditoría")
 
 if btn_ejecutar:
-    try:
-        lat, lon = [float(x.strip()) for x in coord_text.split(",")]
-        point = ee.Geometry.Point([lon, lat])
-        
-        # DATOS REALES (Sentinel y ERA5 Horario)
-        s2 = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED').filterBounds(point).filterDate('2026-05-01', '2026-06-23').median()
-        dem = ee.Image('USGS/SRTMGL1_003').clip(point.buffer(5000).bounds())
-        # ERA5 Hourly para máxima precisión temporal
-        meteo = ee.ImageCollection('ECMWF/ERA5_LAND/HOURLY').filterDate('2026-06-22', '2026-06-23').sort('system:time_start', False).first()
+    lat, lon = [float(x.strip()) for x in coord_text.split(",")]
+    
+    # --- DATOS CLIMÁTICOS REALES (OpenWeather API) ---
+    # Reemplaza 'TU_API_KEY' por la que obtengas en OpenWeatherMap
+    api_key = st.secrets.get("WEATHER_API_KEY", "TU_API_KEY_AQUI")
+    url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={api_key}&units=metric"
+    res = requests.get(url).json()
+    
+    temp_real = res['main']['temp']
+    humedad = res['main']['humidity']
+    viento = res['wind']['speed']
 
-        # CÁLCULOS
-        ndvi = s2.normalizedDifference(['B8', 'B4']).rename('NDVI')
-        slope = ee.Terrain.slope(dem).rename('Pendiente')
-        temp_sat = meteo.select('temperature_2m').subtract(273.15)
+    # --- DATOS SATELITALES (Sentinel-2) ---
+    point = ee.Geometry.Point([lon, lat])
+    col = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED').filterBounds(point).filterDate('2026-05-01', '2026-06-23')
+    
+    if col.size().getInfo() > 0:
+        ndvi = col.median().normalizedDifference(['B8', 'B4']).reduceRegion(ee.Reducer.mean(), point, 30).getInfo().get('NDVI', 0)
         
-        # Extracción
-        data = ee.Image.cat([ndvi, slope, temp_sat]).reduceRegion(ee.Reducer.mean(), point, 30).getInfo()
+        # --- DASHBOARD ---
+        st.subheader("📋 Resumen Geocientífico en Tiempo Real")
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("Biomasa (NDVI)", f"{ndvi:.2f}")
+        c2.metric("Temp. Real (°C)", f"{temp_real:.1f}")
+        c3.metric("Humedad (%)", f"{humedad}%")
+        c4.metric("Viento (m/s)", f"{viento:.1f}")
         
-        # --- 3. DASHBOARD Y CALIBRACIÓN ---
-        final_temp = temp_local if temp_local != 0 else data.get('temperature_2m', 0)
+        st.info("Nota: La temperatura y viento son datos obtenidos de la red meteorológica más cercana a tu ubicación, igual que en Google.")
         
-        with col_map:
-            st.subheader("📋 Resultados de la Auditoría")
-            cols = st.columns(4)
-            cols[0].metric("Biomasa (NDVI)", f"{data.get('NDVI', 0):.2f}")
-            cols[1].metric("Temp. (C°)", f"{final_temp:.1f}")
-            cols[2].metric("Pendiente (°)", f"{data.get('Pendiente', 0):.2f}")
-            cols[3].metric("Estado", "Calibrado" if temp_local != 0 else "Satélital")
-            
-            st.write("### 🧪 Diagnóstico Técnico")
-            st.info(f"Geología: Pendiente de **{data.get('Pendiente', 0):.2f}°**. " + 
-                    ("⚠️ Riesgo de erosión moderado." if data.get('Pendiente', 0) > 5 else "✅ Relieve estable."))
-            st.write("---")
-            m = leafmap.Map(center=[lat, lon], zoom=15)
-            m.add_marker([lat, lon], popup="Zona Auditada")
-            m.add_ee_layer(ndvi, {'min': 0, 'max': 0.8, 'palette': ['red', 'yellow', 'green']}, 'NDVI')
-            m.to_streamlit(height=400)
-    except Exception as e: st.error(f"Error: {e}")
+        m = leafmap.Map(center=[lat, lon], zoom=15)
+        m.add_ee_layer(col.median().normalizedDifference(['B8', 'B4']), {'min': 0, 'max': 0.8, 'palette': ['red', 'yellow', 'green']}, 'NDVI')
+        m.to_streamlit(height=400)
+    else:
+        st.warning("No hay imágenes claras para esta fecha.")
