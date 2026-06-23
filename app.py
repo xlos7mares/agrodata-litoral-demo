@@ -16,43 +16,49 @@ def authenticate_ee():
 authenticate_ee()
 
 st.set_page_config(layout="wide", page_title="Agro Data Litoral PRO")
-st.title("📊 Panel de Diagnóstico Agronómico - Tiempo Real")
+st.title("🛰️ Agro Data Litoral: Diagnóstico Satelital")
 
 coord_text = st.text_input("📍 Pega Coordenadas (Lat, Lon):", value="-32.339, -57.921")
-btn_ejecutar = st.button("🚀 Iniciar Auditoría")
+btn_analizar = st.button("🚀 Ejecutar Análisis Satelital")
 
-if btn_ejecutar:
-    lat, lon = [float(x.strip()) for x in coord_text.split(",")]
-    
-    # --- DATOS CLIMÁTICOS REALES (OpenWeather API) ---
-    # Reemplaza 'TU_API_KEY' por la que obtengas en OpenWeatherMap
-    api_key = st.secrets.get("WEATHER_API_KEY", "TU_API_KEY_AQUI")
-    url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={api_key}&units=metric"
-    res = requests.get(url).json()
-    
-    temp_real = res['main']['temp']
-    humedad = res['main']['humidity']
-    viento = res['wind']['speed']
+if btn_analizar:
+    try:
+        lat, lon = [float(x.strip()) for x in coord_text.split(",")]
+        point = ee.Geometry.Point([lon, lat])
+        
+        # --- ANÁLISIS SATELITAL (Independiente) ---
+        col = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED').filterBounds(point).filterDate('2026-05-01', '2026-06-23')
+        
+        if col.size().getInfo() > 0:
+            s2 = col.median()
+            ndvi = s2.normalizedDifference(['B8', 'B4']).rename('NDVI')
+            stats = ndvi.reduceRegion(ee.Reducer.mean(), point, 30).getInfo()
+            
+            st.metric("Biomasa (NDVI)", f"{stats.get('NDVI', 0):.2f}")
+            
+            # Mapa
+            m = leafmap.Map(center=[lat, lon], zoom=15)
+            m.add_ee_layer(ndvi, {'min': 0, 'max': 0.8, 'palette': ['red', 'yellow', 'green']}, 'NDVI')
+            m.to_streamlit(height=400)
+        else:
+            st.warning("No hay datos satelitales claros para esta fecha.")
 
-    # --- DATOS SATELITALES (Sentinel-2) ---
-    point = ee.Geometry.Point([lon, lat])
-    col = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED').filterBounds(point).filterDate('2026-05-01', '2026-06-23')
-    
-    if col.size().getInfo() > 0:
-        ndvi = col.median().normalizedDifference(['B8', 'B4']).reduceRegion(ee.Reducer.mean(), point, 30).getInfo().get('NDVI', 0)
-        
-        # --- DASHBOARD ---
-        st.subheader("📋 Resumen Geocientífico en Tiempo Real")
-        c1, c2, c3, c4 = st.columns(4)
-        c1.metric("Biomasa (NDVI)", f"{ndvi:.2f}")
-        c2.metric("Temp. Real (°C)", f"{temp_real:.1f}")
-        c3.metric("Humedad (%)", f"{humedad}%")
-        c4.metric("Viento (m/s)", f"{viento:.1f}")
-        
-        st.info("Nota: La temperatura y viento son datos obtenidos de la red meteorológica más cercana a tu ubicación, igual que en Google.")
-        
-        m = leafmap.Map(center=[lat, lon], zoom=15)
-        m.add_ee_layer(col.median().normalizedDifference(['B8', 'B4']), {'min': 0, 'max': 0.8, 'palette': ['red', 'yellow', 'green']}, 'NDVI')
-        m.to_streamlit(height=400)
-    else:
-        st.warning("No hay imágenes claras para esta fecha.")
+        # --- ANÁLISIS CLIMÁTICO (Blindado) ---
+        st.write("---")
+        st.write("### 🌡️ Datos Meteorológicos")
+        try:
+            api_key = st.secrets.get("WEATHER_API_KEY")
+            if api_key:
+                url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={api_key}&units=metric"
+                res = requests.get(url).json()
+                if 'main' in res:
+                    st.metric("Temp. Real (°C)", f"{res['main']['temp']:.1f}")
+                else:
+                    st.error("No se pudieron obtener datos meteorológicos (Revisar API Key).")
+            else:
+                st.info("API Key no configurada. Omitiendo datos de temperatura.")
+        except Exception:
+            st.error("Error en la conexión con el servidor meteorológico.")
+
+    except Exception as e: 
+        st.error(f"Error técnico crítico: {e}")
