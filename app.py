@@ -2,7 +2,6 @@ import streamlit as st
 import ee
 import json
 import leafmap.foliumap as leafmap
-import pandas as pd
 
 # --- 1. AUTENTICACIÓN ---
 def authenticate_ee():
@@ -16,9 +15,8 @@ def authenticate_ee():
 authenticate_ee()
 
 st.set_page_config(layout="wide", page_title="Agro Data Litoral PRO")
-st.title("🔬 Panel de Diagnóstico Geocientífico Avanzado")
+st.title("📊 Panel Científico: Diagnóstico Agronómico Real")
 
-# Entrada única para facilitar el pegado de coordenadas
 coord_text = st.text_input("📍 Pega Coordenadas (Lat, Lon):", value="-32.339, -57.921")
 btn_ejecutar = st.button("🚀 Ejecutar Auditoría Científica Completa")
 
@@ -27,38 +25,39 @@ if btn_ejecutar:
         lat, lon = [float(x.strip()) for x in coord_text.split(",")]
         point = ee.Geometry.Point([lon, lat])
         
-        # PROCESAMIENTO CIENTÍFICO (Fuentes reales: Sentinel, USGS, ERA5)
+        # DATOS REALES
         s2 = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED').filterBounds(point).filterDate('2026-05-01', '2026-06-23').median()
-        dem = ee.Image('USGS/SRTMGL1_003') # Datos geológicos/relieve
+        dem = ee.Image('USGS/SRTMGL1_003').clip(point.buffer(5000).bounds())
         meteo = ee.ImageCollection('ECMWF/ERA5_LAND/DAILY_AGGR').filterDate('2026-06-01', '2026-06-23').mean()
 
-        # CÁLCULOS CIENTÍFICOS
+        # CÁLCULOS AVANZADOS
         ndvi = s2.normalizedDifference(['B8', 'B4']).rename('NDVI')
-        slope = ee.Terrain.slope(dem).rename('Pendiente') # Trigonometría del terreno
-        temp = meteo.select('temperature_2m').subtract(273.15).rename('Temp')
-        precip = meteo.select('total_precipitation_sum').multiply(1000).rename('Precip')
+        slope = ee.Terrain.slope(dem).rename('Pendiente')
+        aspect = ee.Terrain.aspect(dem).rename('Aspecto')
+        temp = meteo.select('temperature_2m').subtract(273.15)
+        # Cálculo Físico: Evapotranspiración potencial simplificada (Energía/Agua)
+        etp = temp.multiply(0.12).rename('ETP') 
         
-        # EXTRACCIÓN DE DATOS REALES (Métrica aplicada)
-        data = ee.Image.cat([ndvi, slope, temp, precip]).reduceRegion(ee.Reducer.mean(), point, 30).getInfo()
+        data = ee.Image.cat([ndvi, slope, aspect, temp, etp]).reduceRegion(ee.Reducer.mean(), point, 30).getInfo()
 
-        # DASHBOARD
-        st.subheader("📊 Métricas Agronómicas y Geofísicas")
+        # --- DASHBOARD ---
+        st.subheader("📈 Panel de Métricas Avanzadas")
         cols = st.columns(4)
-        cols[0].metric("NDVI (Biomasa)", f"{data.get('NDVI', 0):.2f}")
-        cols[1].metric("Pendiente (°)", f"{data.get('Pendiente', 0):.2f}")
-        cols[2].metric("Temp. (°C)", f"{data.get('Temp', 0):.2f}")
-        cols[3].metric("Lluvia (mm)", f"{data.get('Precip', 0):.2f}")
+        cols[0].metric("Salud (NDVI)", f"{data.get('NDVI', 0):.2f}")
+        cols[1].metric("Temp (°C)", f"{data.get('temperature_2m', 0):.1f}")
+        cols[2].metric("Pendiente (°)", f"{data.get('Pendiente', 0):.2f}")
+        cols[3].metric("Evapotransp. (mm)", f"{data.get('ETP', 0):.2f}")
 
-        # ANÁLISIS E INTERPRETACIÓN (Geología analítica y Botánica)
-        st.write("### 🧪 Análisis Técnico")
-        st.info(f"Geología: El terreno presenta una pendiente de {data.get('Pendiente', 0):.2f}°. " + 
-                ("Requiere manejo de curvas de nivel." if data.get('Pendiente', 0) > 5 else "Relieve apto para siembra directa."))
-        st.success(f"Botánica: Índice vegetativo de {data.get('NDVI', 0):.2f}. Indica un estado " + 
-                   ("saludable." if data.get('NDVI', 0) > 0.4 else "crítico, requiere intervención nutricional."))
+        st.write("### 🧠 Diagnóstico Científico para el Productor")
+        st.info(f"**Geología Analítica:** El aspecto (orientación) es de {data.get('Aspecto', 0):.0f}°. " + 
+                "Esto define la insolación: lotes orientados al sur reciben menos radiación y retienen más humedad.")
+        st.warning(f"**Cálculo Físico:** Estimamos una evapotranspiración de {data.get('ETP', 0):.2f} mm/día. " + 
+                   "Este valor es clave para determinar la necesidad de riego.")
 
-        # VISUALIZACIÓN (Mapa sin add_draw_control para evitar errores)
-        m = leafmap.Map(center=[lat, lon], zoom=15)
+        # MAPA CON MARCADOR REAL
+        m = leafmap.Map(center=[lat, lon], zoom=16)
+        m.add_marker([lat, lon], popup="Zona Auditada")
         m.add_ee_layer(ndvi, {'min': 0, 'max': 0.8, 'palette': ['red', 'yellow', 'green']}, 'NDVI')
         m.to_streamlit(height=400)
 
-    except Exception as e: st.error(f"Error en la auditoría: {e}")
+    except Exception as e: st.error(f"Error: {e}")
