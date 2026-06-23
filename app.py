@@ -3,7 +3,6 @@ import ee
 import json
 import leafmap.foliumap as leafmap
 
-# --- 1. AUTENTICACIÓN ---
 def authenticate_ee():
     try:
         creds_dict = json.loads(st.secrets["GCP_CREDENTIALS"])
@@ -15,48 +14,37 @@ def authenticate_ee():
 authenticate_ee()
 
 st.set_page_config(layout="wide", page_title="Agro Data Litoral PRO")
-st.title("📊 Panel Científico: Diagnóstico Agronómico Real")
+st.title("📊 Panel Científico: Auditoría Real")
 
-col1, col2 = st.columns([1, 3])
-with col1:
-    lat = st.number_input("Latitud", value=-32.339, format="%.6f")
-    lon = st.number_input("Longitud", value=-57.921, format="%.6f")
-    btn_analizar = st.button("🚀 Iniciar Auditoría Científica")
+# --- ENTRADA DE DATOS UNIFICADA ---
+coord_input = st.text_input("📍 Pega las coordenadas (Lat, Lon):", value="-32.339, -57.921")
+btn_analizar = st.button("🚀 Ejecutar Análisis Científico")
+
+m = leafmap.Map(center=[-32.339, -57.921], zoom=14)
+m.add_draw_control()
+m.to_streamlit(height=400)
 
 if btn_analizar:
     try:
-        point = ee.Geometry.Point([lon, lat])
-        # Usamos texto en lugar de ee.Date(...) para evitar el error de argumentos
-        fecha_ini = '2026-05-23'
-        fecha_fin = '2026-06-23'
+        # Extraer lat/lon del texto pegado
+        lat, lon = [float(x.strip()) for x in coord_input.split(",")]
+        # Si dibujaste algo, usa esa área; si no, usa el punto
+        geom = m.user_roi if m.user_roi else ee.Geometry.Point([lon, lat])
         
-        # Fuentes de datos reales
-        s2 = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED').filterBounds(point).filterDate(fecha_ini, fecha_fin).median()
-        dem = ee.Image('USGS/SRTMGL1_003').clip(point.buffer(5000).bounds())
-        clima = ee.ImageCollection('ECMWF/ERA5_LAND/DAILY_AGGR').filterDate(fecha_ini, fecha_fin).mean()
+        # Procesar datos reales
+        s2 = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED').filterBounds(geom).filterDate('2026-05-01', '2026-06-23').median()
+        ndvi = s2.normalizedDifference(['B8', 'B4']).rename('NDVI')
+        
+        # Reducción de datos (mean) sobre la geometría seleccionada
+        stats = ndvi.reduceRegion(ee.Reducer.mean(), geom, 30).getInfo()
+        val_ndvi = stats.get('NDVI', 0)
+        
+        # Si da 0, es que la fecha/zona no tiene datos limpios, buscamos en un rango más amplio
+        if val_ndvi == 0:
+            s2_wide = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED').filterBounds(geom).filterDate('2026-01-01', '2026-06-23').median()
+            val_ndvi = s2_wide.normalizedDifference(['B8', 'B4']).reduceRegion(ee.Reducer.mean(), geom, 30).getInfo().get('NDVI', 0)
 
-        # Cálculos de Geometría Analítica (Trigonometría del suelo)
-        slope = ee.Terrain.slope(dem).reduceRegion(ee.Reducer.mean(), point, 30).getInfo().get('slope', 0)
-        ndvi = s2.normalizedDifference(['B8', 'B4']).reduceRegion(ee.Reducer.mean(), point, 30).getInfo().get('NDVI', 0)
-        ndwi = s2.normalizedDifference(['B3', 'B8']).reduceRegion(ee.Reducer.mean(), point, 30).getInfo().get('NDWI', 0)
-        temp = clima.select('temperature_2m').reduceRegion(ee.Reducer.mean(), point, 10000).getInfo().get('temperature_2m', 293) - 273.15
-        precip = clima.select('total_precipitation_sum').reduceRegion(ee.Reducer.mean(), point, 10000).getInfo().get('total_precipitation_sum', 0) * 1000
-
-        # --- PANEL DE DATOS CIENTÍFICOS ---
-        with col2:
-            st.subheader("📋 Resumen Geocientífico")
-            c1, c2, c3, c4 = st.columns(4)
-            c1.metric("Biomasa (NDVI)", f"{ndvi:.2f}")
-            c2.metric("Temp. (°C)", f"{temp:.1f}")
-            c3.metric("Pendiente (°)", f"{slope:.2f}")
-            c4.metric("Lluvia (mm)", f"{precip:.2f}")
-            
-            st.write("### 🔬 Interpretación Técnica")
-            st.write(f"- **Geología:** Pendiente de **{slope:.2f}°**. " + ("⚠️ Alta erosión: requiere terrazas." if slope > 5 else "✅ Estable."))
-            st.write(f"- **Botánica:** Índice hídrico (NDWI) de **{ndwi:.2f}**. " + ("💧 Déficit hídrico." if ndwi < 0 else "🌱 Humedad adecuada."))
-            st.write(f"- **Clima:** {precip:.1f} mm acumulados en el último mes. Dato extraído de reanálisis ERA5.")
-
-            m = leafmap.Map(center=[lat, lon], zoom=15)
-            m.add_ee_layer(s2.normalizedDifference(['B8', 'B4']), {'min': 0, 'max': 0.8, 'palette': ['red', 'yellow', 'green']}, 'NDVI')
-            m.to_streamlit(height=400)
-    except Exception as e: st.error(f"Error: {e}")
+        st.metric("Biomasa Real (NDVI)", f"{val_ndvi:.2f}")
+        st.info("Nota: Si el valor es 0, el satélite no tiene datos limpios (sin nubes) para esta zona en la fecha seleccionada.")
+        
+    except Exception as e: st.error(f"Error procesando coordenadas: {e}")
