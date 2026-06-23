@@ -1,47 +1,51 @@
 import streamlit as st
-import folium
-from streamlit_folium import st_folium
-import numpy as np
-from sentinelhub import SentinelHubRequest, DataCollection, BBox, CRS, MimeType, SHConfig
+import ee
+import geemap.foliumap as geemap
 
-st.set_page_config(page_title="Agro Data Litoral PRO", layout="wide")
+# 1. INICIALIZACIÓN DE GEE
+# Nota: La primera vez, esto te pedirá autenticación vía navegador
+try:
+    ee.Initialize()
+except Exception:
+    ee.Authenticate()
+    ee.Initialize()
 
-def obtener_ndvi_real(lat, lon):
-    # FORZAMOS LA CONFIGURACIÓN
-    config = SHConfig()
-    config.sh_client_id = st.secrets["COPERNICUS_CLIENT_ID"]
-    config.sh_client_secret = st.secrets["COPERNICUS_CLIENT_SECRET"]
-    
-    # IMPORTANTE: Definimos la colección aquí adentro para asegurar compatibilidad
-    collection = DataCollection.SENTINEL2_L2A
-    
-    bbox = BBox(bbox=[lon-0.005, lat-0.005, lon+0.005, lat+0.005], crs=CRS.WGS84)
-    
-    # SOLICITUD EXPLÍCITA
-    request = SentinelHubRequest(
-        evalscript="return [index]",
-        input_data=[SentinelHubRequest.input_data(
-            data_collection=collection,
-            time_interval=('2026-06-01', '2026-06-22')
-        )],
-        responses=[SentinelHubRequest.output_response('default', MimeType.TIFF)],
-        bbox=bbox,
-        config=config
-    )
-    
-    # Esta es la ejecución real
-    data = request.get_data()
-    return round(float(np.nanmean(data[0])), 2)
+st.set_page_config(layout="wide", page_title="Agro Data Litoral PRO")
 
-st.title("🛰️ Consola de Analítica y Auditoría Agronómica")
-coord_input = st.text_input("📍 Coordenadas (Lat, Lon):", value="-32.339063, -57.921296")
+st.title("🛰️ Agro Data Litoral: Auditoría Agronómica Avanzada")
 
-if st.button("🚀 Iniciar Escaneo REAL"):
-    try:
-        lat, lon = [float(x.strip()) for x in coord_input.split(",")]
-        # Llamada directa sin red de seguridad
-        ndvi = obtener_ndvi_real(lat, lon)
-        st.success(f"Dato capturado vía Satélite: {ndvi}")
-    except Exception as e:
-        # AQUÍ VEREMOS EL ERROR REAL
-        st.error(f"DETALLE DEL ERROR: {str(e)}")
+# 2. ENTRADA DE DATOS
+coord_input = st.text_input("📍 Ingrese Coordenadas (Lat, Lon):", value="-32.339, -57.921")
+
+if st.button("🚀 Procesar Datos Satelitales"):
+    lat, lon = [float(x.strip()) for x in coord_input.split(",")]
+    point = ee.Geometry.Point([lon, lat])
+    
+    # Cargar datos Sentinel-2 reales
+    img = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED') \
+        .filterBounds(point) \
+        .filterDate('2026-01-01', '2026-06-22') \
+        .median()
+
+    # FUNCIONES CIENTÍFICAS
+    # Química/Física: Cálculo de NDVI (Índice de Vegetación)
+    ndvi = img.normalizedDifference(['B8', 'B4']).rename('NDVI')
+    
+    # Trigonometría: Cálculo de pendiente (Slope) usando un modelo digital de elevación
+    dem = ee.Image('USGS/SRTMGL1_003')
+    slope = ee.Terrain.slope(dem)
+    
+    # Extracción de valores
+    valor_ndvi = ndvi.reduceRegion(reducer=ee.Reducer.mean(), geometry=point, scale=10).get('NDVI').getInfo()
+    valor_pendiente = slope.reduceRegion(reducer=ee.Reducer.mean(), geometry=point, scale=30).get('slope').getInfo()
+
+    # 3. RESULTADOS EN PANTALLA
+    c1, c2 = st.columns(2)
+    c1.metric("NDVI (Salud Cultivo)", f"{valor_ndvi:.3f}")
+    c2.metric("Pendiente (Trigonometría)", f"{valor_pendiente:.1f}°")
+    
+    # Visualización cartográfica
+    m = geemap.Map()
+    m.set_center(lon, lat, 15)
+    m.add_layer(ndvi, {'min': 0, 'max': 1, 'palette': ['blue', 'white', 'green']}, 'NDVI')
+    m.to_streamlit(height=500)
