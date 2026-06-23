@@ -1,55 +1,52 @@
 import streamlit as st
 import ee
+import json
+import os
 import leafmap.foliumap as leafmap
 
-# 1. INICIALIZACIÓN PÚBLICA (Sin llaves ni archivos)
-try:
-    # Intentamos conectar a los servicios públicos de GEE
+# 1. Configuración de credenciales
+# Borra todo lo que tengas en secrets y pega el bloque JSON completo como 'GCP_CREDENTIALS'
+if "GCP_CREDENTIALS" in st.secrets:
+    # Cargar credenciales desde los secretos
+    creds_dict = json.loads(st.secrets["GCP_CREDENTIALS"])
+    
+    # Guardar temporalmente como archivo JSON para que Earth Engine lo lea
+    with open("service_account.json", "w") as f:
+        json.dump(creds_dict, f)
+        
+    # Inicializar con la cuenta de servicio
+    ee.Initialize(credentials=ee.ServiceAccountCredentials(creds_dict['client_email'], "service_account.json"))
+else:
+    # Fallback si no encuentra secretos (por si acaso)
     ee.Initialize(opt_url='https://earthengine-highvolume.googleapis.com')
-except Exception:
-    # Si la sesión no está iniciada, avisamos que debe autorizarse
-    st.warning("Sesión de Earth Engine no iniciada. Por favor, asegúrate de estar logueado en tu cuenta de Google.")
-    st.stop()
 
+# 2. Interfaz de la App
 st.set_page_config(layout="wide", page_title="Agro Data Litoral PRO")
 st.title("🛰️ Agro Data Litoral: Auditoría Agronómica")
 
-# 2. ENTRADA DE DATOS
 coord_input = st.text_input("📍 Ingrese Coordenadas (Lat, Lon):", value="-32.339, -57.921")
 
-if st.button("🚀 Procesar Datos Satelitales"):
+if st.button("🚀 Procesar Datos"):
     try:
         lat, lon = [float(x.strip()) for x in coord_input.split(",")]
         point = ee.Geometry.Point([lon, lat])
         
-        # Cargar colección pública (Sentinel-2 SR)
+        # Procesamiento satelital
         img = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED') \
             .filterBounds(point) \
             .filterDate('2026-01-01', '2026-06-22') \
             .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 20)) \
             .median()
 
-        # Cálculo de NDVI (B8=NIR, B4=Red)
         ndvi = img.normalizedDifference(['B8', 'B4']).rename('NDVI')
         
-        # Cálculo de pendiente (DEM)
-        dem = ee.Image('USGS/SRTMGL1_003')
-        slope = ee.Terrain.slope(dem)
-        
-        # Extracción de valores
-        valor_ndvi = ndvi.reduceRegion(reducer=ee.Reducer.mean(), geometry=point, scale=30).get('NDVI').getInfo()
-        valor_slope = slope.reduceRegion(reducer=ee.Reducer.mean(), geometry=point, scale=30).get('slope').getInfo()
-
-        # 3. INTERFAZ DE RESULTADOS
-        col1, col2 = st.columns(2)
-        col1.metric("NDVI", f"{valor_ndvi:.3f}" if valor_ndvi else "N/A")
-        col2.metric("Pendiente (°)", f"{valor_slope:.1f}" if valor_slope else "N/A")
-        
-        # Mapa
+        # Mostrar Mapa
         m = leafmap.Map()
         m.set_center(lon, lat, 14)
         m.add_layer(ndvi, {'min': 0, 'max': 1, 'palette': ['blue', 'white', 'green']}, 'NDVI')
         m.to_streamlit(height=500)
         
+        st.success("Datos procesados correctamente.")
+        
     except Exception as e:
-        st.error(f"Error procesando datos: {e}")
+        st.error(f"Error técnico: {e}")
