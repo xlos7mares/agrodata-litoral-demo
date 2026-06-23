@@ -1,6 +1,6 @@
 streamlit
-streamlit-folium
-requests
-sentinelhub
+earthengine-api
+geemap
+folium
 numpy
-pandas
+requests
